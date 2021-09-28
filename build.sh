@@ -54,10 +54,14 @@ echo -e "[$GREEN""INFO "$BLANK"] ubuntu version: $DOCKER_FILE"
 
 echo "FROM ubuntu:$UBUNTU_VERSION" > Dockerfile
 cat ./docker/base.docker >> Dockerfile
+docker build -t profiler .
 
-#if [ -f "$DOCKER_FILE" ]
-#then
-#    cat $DOCKER_FILE >> Dockerfile
-#fi
+if [ -f "$DOCKER_FILE" ]
+then
+    echo "FROM profiler:latest" > Dockerfile
+    cat $DOCKER_FILE >> Dockerfile
+    #docker build -t profiler:
+fi
+
 
 #rm $DOCKER_FILE
