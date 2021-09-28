@@ -16,11 +16,43 @@ from pandas.api.types import is_numeric_dtype
 config = dict()
 config['report_file'] = 'deltas.csv'
 
-def plot_single(report_file, field):
-    plot_multiple(report_file, fields = [field])
+def plot_single(report_file, image_dir, fields = None):
+    df = pd.read_csv(report_file)
+    df['TimeSteps'] = np.arange(0, len(df))
+    
+    for field in fields:
+        metric = field[:-1]
+        if metric not in df.columns:
+            print('Could not find the metric "{}"'.format(metric))
+            continue
+        if is_numeric_dtype(df[metric]):
+            # plot the line segments
+            plt.plot(df['TimeSteps'], df[metric], label=metric)
+
+            ax = plt.gca()
+            ax.spines["top"].set_visible(False)
+            ax.spines["bottom"].set_visible(False)
+            ax.spines["left"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.set_facecolor('#e5ecf6')
+            ax.xaxis.tick_bottom()
+            ax.yaxis.tick_left()
+
+            ax.set_xlim(xmin=0, xmax=len(df)-1)
+            ax.set_ylim(ymin=df[metric].min(), ymax=df[metric].max())
+
+            plt.title(metric)
+            plt.ylabel('Runtime (in centiseconds)')
+            plt.xlabel('Time Steps (in seconds)')
+        
+            # linestyle = '-', '--', '-.', ':', 'None', ' ', '', 'solid', 'dashed', 'dashdot', 'dotted'
+            plt.grid(color = 'white', linestyle = 'solid', linewidth = 1)
+            plt.grid(True)
+            plt.savefig('{}/{}'.format(image_dir, metric), bbox_inches='tight', dpi=100, transparent=False)
+            plt.clf()
 
 # plot the graph from the report file
-def plot_multiple(report_file, fields = None, image_file = None):
+def plot_multiple(report_file, image_dir = None, fields = None):
     df = pd.read_csv(report_file)
     df['TimeSteps'] = np.arange(0, len(df))
     
@@ -80,26 +112,34 @@ def plot_multiple(report_file, fields = None, image_file = None):
     plt.grid(color = 'white', linestyle = 'solid', linewidth = 1)
     plt.grid(True)
     
-    if image_file is not None:
-        plt.savefig(image_file, bbox_inches='tight', dpi=100, transparent=False)
+    if image_dir is not None:
+        plt.savefig('{}/{}'.format(image_dir, "profiler.png"), bbox_inches='tight', dpi=100, transparent=False)
     else:
         plt.show()
     plt.clf()
 
 if __name__ == '__main__':
     
-#     delta_file = sys.argv[0]
-#     config_file = sys.argv[1]
     delta_file = "deltas.csv"
     config_file = "graph.ini"
-    image_file = "graph.png"
+    image_dir = "test/"
+
+    is_single_plot = None
+    count = len(sys.argv)
+    if count > 1:
+        delta_file = sys.argv[1]
+    if count > 2:
+        image_dir = sys.argv[2]
+    if count > 3:
+        config_file = sys.argv[3]
+    if count > 4:
+        is_single_plot = sys.argv[4]
 
     file = open(config_file, "r")
     metrics = [metric for metric in file.readlines()]
     
-    #plot_single(delta_file, 'vCpuTime')
-    plot_multiple(delta_file, fields = metrics)
-
-
-
+    if is_single_plot is not None:
+        plot_single(delta_file, image_dir, fields = metrics)
+    else:
+        plot_multiple(delta_file, image_dir, fields = metrics)
 
