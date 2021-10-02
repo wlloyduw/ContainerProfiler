@@ -7,6 +7,8 @@ import re
 import subprocess
 import os.path
 from os import path
+import os
+import glob
 
 #add the virtual level.
 CORRECTION_MULTIPLIER=100
@@ -51,6 +53,7 @@ def getContainerInfo():
         count+=1
         cProcessorDict[temp_str]=int(el)
 
+    # need to find a different 
     cDiskSectorIO=0
     if path.exists('/sys/fs/cgroup/blkio/blkio.sectors'):
         cDiskSectorIOFile=open("/sys/fs/cgroup/blkio/blkio.sectors", "r")
@@ -69,11 +72,6 @@ def getContainerInfo():
 
         for line in o.decode('UTF-8').split(sep='\n')[:-1]:
             major_minor_arr.append(line.split()[1])
-
-         #   temp=($line)
-          #  disk_arr+=(${temp[1]})
-          #done
-        #major_minor=str(o.decode('UTF-8')).split()[1]
 
         cDiskReadBytesFile=open("/sys/fs/cgroup/blkio/blkio.throttle.io_service_bytes", "r")
         cProcessorStatsFile_info=cDiskReadBytesFile.read()
@@ -185,6 +183,62 @@ def getVmInfo():
     vDiskSucessfulReads=int(re.findall(rf"{mounted_filesys}.*", vm_disk_file_stats)[0].split(sep=" ")[1])
     vDiskSucessfulWrites=int(re.findall(rf"{mounted_filesys}.*", vm_disk_file_stats)[0].split(sep=" ")[5])
     vDiskTotal, vDiskUsed, vDiskFree = shutil.disk_usage("/")
+    
+    # Varik Hoang
+    cpu_caches = {}
+    cpu_dirs = glob.glob('/sys/devices/system/cpu/cpu?')
+    for cpu_dir in cpu_dirs:
+        index_dirs = glob.glob('{}/cache/index*'.format(cpu_dir))
+        for index_dir in index_dirs:
+            file = open("{}/level".format(index_dir), "r")
+            cache_level = int(file.readline()[:-1])
+            file.close()
+    
+            file = open("{}/type".format(index_dir), "r")
+            cache_type = str(file.readline()[:-1])
+            file.close()
+            if cache_type == "Data":
+                cache_type = "d"
+            elif cache_type == "Instruction":
+                cache_type = "i"
+            else:
+                cache_type = ""
+            
+            file = open("{}/shared_cpu_map".format(index_dir), "r")
+            cache_shared_cpu_map = str(file.readline()[:-1])
+            file.close()
+            
+            file = open("{}/size".format(index_dir), "r")
+            cache_size = str(file.readline()[:-1])
+            file.close()
+            
+            cache_key = "L{}{}".format(cache_level, cache_type)
+            if cache_key not in cpu_caches.keys():
+                cpu_caches[cache_key] = {}
+                cache_size_unit = cache_size[len(cache_size)-1]
+                if cache_size_unit == "K":
+                    cache_size = int(cache_size[:-1]) * 1024
+                elif cache_size_unit == "M":
+                    cache_size = int(cache_size[:-1]) * 1024 * 1024
+                else:
+                    cache_size = int(cache_size)
+                cpu_caches[cache_key][cache_shared_cpu_map] = cache_size
+            else:
+                if cache_shared_cpu_map not in cpu_caches[cache_key].keys():
+                    cache_size_unit = cache_size[len(cache_size)-1]
+                    if cache_size_unit == "K":
+                        cache_size = int(cache_size[:-1]) * 1024
+                    elif cache_size_unit == "M":
+                        cache_size = int(cache_size[:-1]) * 1024 * 1024
+                    else:
+                        cache_size = int(cache_size)
+                    cpu_caches[cache_key][cache_shared_cpu_map] = cache_size
+    
+    for cache_key in cpu_caches.keys():
+        total_size = 0
+        for shared_cpu_map in cpu_caches[cache_key].keys():
+            total_size += cpu_caches[cache_key][shared_cpu_map]
+        cpu_caches[cache_key] = total_size
 
     vm_dict={
         "vMetricType" : "VM Level",
@@ -219,6 +273,7 @@ def getVmInfo():
         "vMemoryFree" : round(memory[4]* CORRECTION_MULTIPLIER_MEMORY),
         "vMemoryBuffers" : round(memory[7]* CORRECTION_MULTIPLIER_MEMORY),
         "vMemoryCached" : round(memory[8]* CORRECTION_MULTIPLIER_MEMORY),
+        "vCpuCache": cpu_caches,
         "vLoadAvg" : loadavg[0],
         "vId" : "unavailable",
         "vCpuType" : vCpuType,
