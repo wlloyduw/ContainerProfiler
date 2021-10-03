@@ -1,1 +1,46 @@
 python plotly_graph_generation.py -s 1 --infile deltas.csv graph_generation_config.ini
+
+sudo ./build.sh -d docker/sysbench.docker
+
+# for debugging purpose
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-t 1 -o /data/sysbench" \
+    -v ${PWD}:/data \
+    -v ${PWD}/profiler.sh:/profiler.sh \
+    -v ${PWD}/docker/sysbench.sh:/sysbench.sh \
+    profiler:sysbench
+
+--test=cpu --cpu-max-prime=20000 --max-requests=4000 run
+--test=memory --memory-block-size=1M --memory-total-size=100G  --num-threads=1 run
+
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-t 1 -o /data/sysbench" \
+    -v ${PWD}:/data \
+    profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
+
+sudo docker run --rm \
+    -e TOOL=delta \
+    -e TOOL_ARGUMENTS="-i /data/sysbench -o /data/sysbench" \
+    -v ${PWD}:/data \
+    profiler:sysbench
+
+sudo docker run --rm \
+    -e TOOL=delta \
+    -e TOOL_ARGUMENTS="-i /data/sysbench -o /data/sysbench" \
+    -v ${PWD}:/data \
+    profiler:sysbench
+
+sudo docker run --rm \
+    -e TOOL=csv \
+    -e TOOL_ARGUMENTS="-w -i /data/sysbench -o /data/sysbench/deltas.csv -p /data/sysbench/process.csv" \
+    -v ${PWD}:/data \
+    profiler:sysbench
+
+sudo docker run --rm \
+    -e TOOL=graph \
+    -e TOOL_ARGUMENTS="-r /data/sysbench/deltas.csv -g /data/sysbench -m /data/sysbench/graph.ini -s" \
+    -v ${PWD}:/data \
+    profiler:sysbench
+

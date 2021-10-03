@@ -50,10 +50,7 @@ function usage()
     echo "       $0 graph -r deltas.csv -g test/ -m graph.ini"
     echo "       $0 graph -r deltas.csv -g test/ -m graph.ini -s"
     echo "Todo:"
-    echo "     1. Need to have a function that check if all packages installed"
-    echo "        - python3: psutil"
-    echo "        - ubuntu: bc jq"
-    echo "     2. the profiling does not work logically when the time step > 0 and < 1 (generating the JSON files takes too long?)"
+    echo "     1. the profiling does not work logically when the time step > 0 and < 1 (generating the JSON files takes too long?)"
 }
 
 function error()
@@ -395,7 +392,7 @@ function csv()
     echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$DELTA_INPUT_DIR$BLANK"
     echo -e "[$GREEN""INFO "$BLANK"] the CSV output file of the profiling: $GREEN$CSV_OUTPUT_FILE$BLANK"
 
-    DELTA_FILES=$(find test/ -name "delta_????_??_??_??_??_??.json" | sort)
+    DELTA_FILES=$(find $DELTA_INPUT_DIR -name "delta_????_??_??_??_??_??.json" | sort)
     for DELTA_FILE in $DELTA_FILES
     do
         jq -r '[.Container_Write_Time,.Process_Write_Time,.VM_Write_Time,.cCpuTime,.cCpuTimeKernelMode,.cCpuTimeUserMode,.cDiskReadBytes,.cDiskSectorIO,.cDiskWriteBytes,.cId,.cMajorPGFault,.cMemoryMaxUsed,.cMemoryUsed,.cNetworkBytesRecvd,.cNetworkBytesSent,.cNumProcesses,.cNumProcessors,.cPGFault,.currentTime,.pMetricType,.vBootTime,.vCpuContextSwitches,.vCpuIdleTime,.vCpuMhz,.vCpuNice,.vCpuSteal,.vCpuTime,.vCpuTimeIOWait,.vCpuTimeIntSrvc,.vCpuTimeKernelMode,.vCpuTimeSoftIntSrvc,.vCpuTimeUserMode,.vCpuType,.vDiskMergedReads,.vDiskMergedWrites,.vDiskReadTime,.vDiskSectorReads,.vDiskSectorWrites,.vDiskSuccessfulReads,.vDiskSuccessfulWrites,.vDiskWriteTime,.vId,.vKernelInfo,.vLoadAvg,.vMajorPageFault,.vMemoryBuffers,.vMemoryCached,.vMemoryFree,.vMemoryTotal,.vMetricType,.vNetworkBytesRecvd,.vNetworkBytesSent,.vPgFault] | @csv' $DELTA_FILE >> $CSV_OUTPUT_FILE
