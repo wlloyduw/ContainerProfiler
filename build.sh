@@ -50,7 +50,7 @@ then
     UBUNTU_VERSION=$(cat /etc/os-release | grep VERSION_ID | grep -o '".*"' | sed 's/"//g')
 fi
 echo -e "[$GREEN""INFO "$BLANK"] ubuntu version: $UBUNTU_VERSION"
-echo -e "[$GREEN""INFO "$BLANK"] ubuntu version: $DOCKER_FILE"
+echo -e "[$GREEN""INFO "$BLANK"] docker file: $DOCKER_FILE"
 
 echo "FROM ubuntu:$UBUNTU_VERSION" > Dockerfile
 cat ./docker/base.docker >> Dockerfile
@@ -60,8 +60,9 @@ if [ -f "$DOCKER_FILE" ]
 then
     echo "FROM profiler:latest" > Dockerfile
     cat $DOCKER_FILE >> Dockerfile
-    #docker build -t profiler:
+    docker build -t profiler:$(basename $DOCKER_FILE .docker) .
 fi
 
 
 #rm $DOCKER_FILE
+# sudo docker run --rm -v $PWD:/data profiler profile -o /data

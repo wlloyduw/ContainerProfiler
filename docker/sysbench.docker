@@ -1,0 +1,7 @@
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y sysbench \
+    && apt-get autoclean -y && apt-get autoremove -y --purge && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk*
+COPY docker/sysbench.sh .
+RUN chmod +x sysbench.sh
+#ENTRYPOINT ["./sysbench.sh"]
+ENTRYPOINT ["/bin/bash"]
