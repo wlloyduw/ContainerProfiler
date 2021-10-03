@@ -19,6 +19,7 @@ RED='\e[91m'
 GREEN='\e[92m'
 YELLOW='\e[93m'
 BLANK='\e[39m'
+WHITE_SPACE="[[:space:]]"
 
 function usage()
 {
@@ -78,7 +79,13 @@ function profile()
     eval set -- "$(getopt -a --options o:t:cd -- "$@")"
     while true
     do
-        case "$1" in
+        ARGUMENT=$1
+        if [[ $ARGUMENT =~ $WHITE_SPACE ]]
+        then
+            ARGUMENT=\"$ARGUMENT\"
+        fi
+        
+        case "$ARGUMENT" in
             -o|--output-directory)
                 PROFILER_OUTPUT_DIR=$2
                 shift 2;;
@@ -92,7 +99,7 @@ function profile()
                 break;;
         esac
     done
-    PROFILER_COMMAND_SET=$2
+    PROFILER_COMMAND_SET="${@:2}"
     shift # to remove the last couple of characters --
 
     # check if the variable is unset
@@ -150,12 +157,12 @@ function profile()
     then
         # execute the set of commands
         python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
-        eval $@
+        eval "$@"
         STATUS=$?
         python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
     else
         # execute the set of commands and capture the process id
-        eval $@ & PID=$!
+        eval "$@" & PID=$!
 
         # keep checking the process id until it finishes in time steps
         while kill -0 $PID > /dev/null 2>&1
@@ -547,13 +554,13 @@ fi
 # tool
 case "$1" in
     "profile")
-        profile $@ ;;
+        profile "$@" ;;
     "delta")
-        delta $@ ;;
+        delta "$@" ;;
     "csv")
-        csv $@ ;;
+        csv "$@" ;;
     "graph")
-        graph $@ ;;
+        graph "$@" ;;
     *)
         usage
 esac

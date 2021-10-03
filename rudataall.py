@@ -184,7 +184,9 @@ def getVmInfo():
     vDiskSucessfulWrites=int(re.findall(rf"{mounted_filesys}.*", vm_disk_file_stats)[0].split(sep=" ")[5])
     vDiskTotal, vDiskUsed, vDiskFree = shutil.disk_usage("/")
     
-    # Varik Hoang
+    # -----------------------------------------
+    # Add CPU caches L1, L2, L3 to the profiler
+    # -----------------------------------------
     cpu_caches = {}
     cpu_dirs = glob.glob('/sys/devices/system/cpu/cpu?')
     for cpu_dir in cpu_dirs:
