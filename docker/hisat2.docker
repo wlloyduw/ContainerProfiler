@@ -1,0 +1,14 @@
+MAINTAINER varikmp<varikmp@uw.edu>
+ENV DEBIAN_FRONTEND noninteractive
+ENV HOME /root
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y wget unzip python \
+    && wget --no-check-certificate -O hisat2-2.2.1-Linux_x86_64.zip https://cloud.biohpc.swmed.edu/index.php/s/oTtGWbWjaxsQ2Ho/download && unzip hisat2-2.2.1-Linux_x86_64.zip \
+    && ln -sf /hisat2-2.2.1/hisat2 /usr/bin/hisat2 \
+    && apt-get remove -y unzip wget \
+    && apt-get autoclean -y && apt-get autoremove -y --purge && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk* \
+    && rm hisat2-2.2.1-Linux_x86_64.zip
+COPY docker/entrypoint.sh .
+RUN chmod +x entrypoint.sh
+RUN sed -i 's/COMMAND/hisat2/g' entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
