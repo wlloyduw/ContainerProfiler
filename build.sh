@@ -95,12 +95,6 @@ sudo docker run --rm \
     profiler:sysbench
 
 sudo docker run --rm \
-    -e TOOL=delta \
-    -e TOOL_ARGUMENTS="-i /data/sysbench -o /data/sysbench" \
-    -v ${PWD}:/data \
-    profiler:sysbench
-
-sudo docker run --rm \
     -e TOOL=csv \
     -e TOOL_ARGUMENTS="-w -i /data/sysbench -o /data/sysbench/deltas.csv -p /data/sysbench/process.csv" \
     -v ${PWD}:/data \

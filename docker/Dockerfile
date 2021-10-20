@@ -1,0 +1,10 @@
+MAINTAINER varikmp<varikmp@uw.edu>
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y sysbench \
+    && apt-get autoclean -y && apt-get autoremove -y --purge \
+	&& rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk*
+COPY docker/entrypoint.sh .
+RUN chmod +x entrypoint.sh
+RUN sed -i 's/COMMAND/sysbench/g' entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
