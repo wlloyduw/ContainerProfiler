@@ -21,6 +21,9 @@ def plot_single(report_file, image_dir, fields = None):
     
     for field in fields:
         metric = field[:-1]
+        metric = metric.lstrip()
+        if metric[0] == '#':
+            continue
         if metric not in df.columns:
             print('Could not find the metric "{}"'.format(metric))
             continue

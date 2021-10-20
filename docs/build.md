@@ -1,34 +1,10 @@
-# Container Profiler
-
-University of Washington Tacoma
-
-<img src="./docs/logo.png" alt="drawing" width="400"/>
-
 # Table of Contents
-   * [FAQ](#faq)
-      * [General](#general)
-         * [Why should I use the Container Profiler?](#why-should-i-use-the-Container-Profiler)
-      * [Usage](#usage)
-         * [How do I use Container Profiler on my own container?](#how-do-i-use-the-Container-Profiler-on-my-own-container)
-      * [Miscellaneous](#miscellaneous)
-         * [How should I reference the Container Profiler if I use it?](#how-should-i-reference-the-Container-Profiler-if-i-use-it)
-   * [MANUAL](#manual)
-      * [GENERAL INFORMATION](#general-information)
-         * [Overview: Running the Container Profiler](#overview-running-the-container-Profiler)
-      * [Container Profiler](#container-profiler-1)
-         * [Function Reference](#function-reference)
-         * [Metrics Description](#metrics-description)
-         * [VM Level Metrics](#vm-level-metrics)
-         * [Container Level Metrics](#container-level-metrics)
-         * [Process Level Metrics](#process-level-metrics)
-      * [Tutorial - Profiling a Container](#tutorial-profiling-a-container)
-         * [Video Demonstration](#video-demonstration)
-         * [Install the Container Profiler](#Install-the-Container-Profiler)
-         * [Preparing the Container Profiler](#Preparing-the-Container-Profiler)
-         * [Starting the Profiler](#starting-the-profiler)
 
-# FAQ
-## General
+FILL UP LATER
+
+## How do I build the Container Profiler with additional software
+
+
 
 ### Why should I use the Container Profiler?
 
@@ -36,7 +12,7 @@ University of Washington Tacoma
 
 ## Usage
 
-### How do I use the Container Profiler on my own container?
+### How do I use the Container Profiler on my own container
 
 1\. Install the Container Profiler
 
