@@ -2,9 +2,8 @@
 
 FILL UP LATER
 
-<!---
-please identify container profiler use case.  have added these to the google doc task list. 
-assume this is the use case where the user has "no container" and wants to profile a task --->
+<!---please identify container profiler use case.  Have added these to the google doc task list. 
+Assume documentation below is for the use case where the user has "no container" and wants to profile a task --->
 ## How do I build the ContainerProfiler with additional software
 
 Here is an example of having a software (sysbench) installed in the ContainerProfiler
