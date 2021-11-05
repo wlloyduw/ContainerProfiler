@@ -1,8 +1,5 @@
 MAINTAINER varikmp<varikmp@uw.edu>
 ENV DEBIAN_FRONTEND noninteractive
-ENV HOME /
-COPY docker/*.sh .
-RUN chmod +x *.sh && ./INSTALL_SCRIPT.sh
 RUN apt-get update \
     && apt-get install --no-install-recommends -y build-essential gcc cmake libbz2-dev zlib1g-dev automake git \
     && git config --global http.sslVerify false \
@@ -10,7 +7,4 @@ RUN apt-get update \
     && apt-get remove -y git cmake libbz2-dev zlib1g-dev automake gcc build-essential \
     && apt-get autoclean -y && apt-get autoremove -y --purge && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk* \
     && rm -rf /bwa*
-COPY docker/entrypoint.sh .
-RUN chmod +x entrypoint.sh
-RUN sed -i 's/COMMAND/bwa/g' entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+

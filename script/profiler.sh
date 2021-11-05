@@ -488,7 +488,7 @@ function graph()
     if [ -z "$METRIC_INPUT_FILE" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the CSV input file and will generate graphs for all metrics"
-        METRIC_INPUT_FILE="/root/default.ini"
+        METRIC_INPUT_FILE="./default.cfg"
     else
         # check if the metric file is absolute path
         case $METRIC_INPUT_FILE in
@@ -502,7 +502,7 @@ function graph()
         then
             echo -e "[$YELLOW""WARN "$BLANK"] could not find the metric input file $YELLOW$METRIC_INPUT_FILE$BLANK"
             echo -e "[$YELLOW""WARN "$BLANK"] will generate graphs for all metrics"
-            METRIC_INPUT_FILE="$(pwd)/default.ini"
+            METRIC_INPUT_FILE="$(pwd)/default.cfg"
         fi
     fi
 

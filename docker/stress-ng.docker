@@ -1,0 +1,8 @@
+FROM ubuntu:20.04
+MAINTAINER varikmp<varikmp@uw.edu>
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get -y update \
+    && apt-get install -y stress-ng \
+    && rm -rf /var/lib/apt/lists/*
+CMD ["stress-ng", "--cpu", "4", "--cpu-method", "fft", "--cpu-ops", "8000"]
+CMD ["stress-ng", "--cpu", "1", "--cpu-method", "fft", "--cpu-ops", "8000"]

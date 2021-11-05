@@ -2,6 +2,6 @@ FROM ubuntu:20.04
 MAINTAINER varikmp<varikmp@uw.edu>
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get -y update \
-    && apt-get install -y sysbench \
+    && apt-get install -y git \
     && rm -rf /var/lib/apt/lists/*
-ENTRYPOINT ["sysbench"]
+CMD ["git", "clone", "https://github.com/varikmp/nanorc"]
