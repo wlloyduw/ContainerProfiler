@@ -2,16 +2,23 @@
 
 FILL UP LATER
 
-# How do I build the ContainerProfiler with additional software as an entrypoint
+<!---which container profiler use case is this from the 4 listed in the ContainerProfiler google doc task list ?
+  --->
+## How do I build a Docker Container that integrates the ContainerProfiler to profile a task or application 
 
-Here is an example of having a software (sysbench) installed in the ContainerProfiler
+Here is a ready-to-use ContainerProfiler Docker container that is preconfigured to profile the sysbench benchmark application.
+This container can be customized to profile any program or task.
 
-We create a docker file **sysbench.docker** in the directory **./docker** as the picture shown below
+As a starting point, a preconfigured docker file **sysbench.docker** is provided in the directory **./docker** as shown below:
 
 <img src="./01_bcpwas.png" alt="drawing" width="560"/>
 
-We are now ready to build a container image including ContainerProfiler and a software (sysbench). To build our custom container image, we run the command:
+First build the Docker container image for this example which incorporates the ContainerProfiler and the sysbench benchmark application. To build the container image, run the command:
 
+<!--- is this supposed to be build.sh ??? --->
+<!--- should this be run with sudo ??? --->
+<!--- this does not appear to match command: sudo ./build.sh -d docker/sysbench.docker  --->
+<!--- command below does not seem correct - does not build container with sysbench --->
 ```bash
 sudo ./build --docker-file ./docker/sysbench.docker
 ```
