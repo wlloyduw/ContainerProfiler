@@ -29,7 +29,7 @@ fi
 
 # generate build logging file
 BUILD_LOG=build.csv
-if [ -f "$BUILD_LOG" ]
+if [ ! -f "$BUILD_LOG" ]
 then
     echo "status,runtime,install,execute,docker,command" > $BUILD_LOG
 fi
