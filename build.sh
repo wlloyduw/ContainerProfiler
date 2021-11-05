@@ -27,6 +27,13 @@ then
     apt install -y bc
 fi
 
+# generate build logging file
+BUILD_LOG=build.csv
+if [ -f "$BUILD_LOG" ]
+then
+    echo "status,runtime,install,execute,docker,command" > $BUILD_LOG
+fi
+
 # color code format
 RED='\e[91m'
 GREEN='\e[92m'
@@ -153,8 +160,10 @@ echo -e "[$GREEN""INFO "$BLANK"] time to build the container image profiler:$TAG
 DOCKER_IMAGE=$(docker images | grep profiler | grep $TAG)
 if [ -z "$DOCKER_IMAGE" ]
 then
+    echo "failed,$RUNTIME,$INSTALL_SCRIPT,$EXECUTE_SCRIPT,$DOCKER_FILE,$@" > $BUILD_LOG
     echo -e "[$RED""ERROR"$BLANK"] could not find the container image profiler:$TAG";
 else
+    echo "passed,$RUNTIME,$INSTALL_SCRIPT,$EXECUTE_SCRIPT,$DOCKER_FILE,$@" > $BUILD_LOG
     echo -e "[$GREEN""INFO "$BLANK"] here is an example of running the container"
     echo -e "$GREEN\$$BLANK sudo docker run --rm \\"
     echo -e "\t-e TOOL=profile \\"
