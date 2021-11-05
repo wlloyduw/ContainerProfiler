@@ -2,7 +2,7 @@
 
 FILL UP LATER
 
-## How do I build the ContainerProfiler with additional software
+# How do I build the ContainerProfiler with additional software as an entrypoint
 
 Here is an example of having a software (sysbench) installed in the ContainerProfiler
 
@@ -13,7 +13,7 @@ We create a docker file **sysbench.docker** in the directory **./docker** as the
 We are now ready to build a container image including ContainerProfiler and a software (sysbench). To build our custom container image, we run the command:
 
 ```bash
-./build --docker-file ./docker/sysbench.docker
+sudo ./build --docker-file ./docker/sysbench.docker
 ```
 
 To check if our docker image was built correctly, we run the command:
@@ -104,3 +104,8 @@ There are two CSV files generated: deltas.csv and processes.csv
 <img src="./01_gcsvfdf_deltas.png" alt="drawing" width="640"/>
 
 <img src="./01_gcsvfdf_processes.png" alt="drawing" width="640"/>
+
+## How do I build the ContainerProfiler with additional software using my own script
+
+
+
