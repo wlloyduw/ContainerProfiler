@@ -21,6 +21,12 @@ then
     exit
 fi
 
+# check software
+if [ -z "$(which bc)" ]
+then
+    apt install -y bc
+fi
+
 # color code format
 RED='\e[91m'
 GREEN='\e[92m'
@@ -64,6 +70,9 @@ echo -e "[$GREEN""INFO "$BLANK"] ubuntu version: $UBUNTU_VERSION"
 if [ -z "$INSTALL_SCRIPT" ]; then echo -e "[$YELLOW""WARN "$BLANK"] did not specify the install script"; else echo -e "[$GREEN""INFO "$BLANK"] install script: $INSTALL_SCRIPT"; fi
 if [ -z "$EXECUTE_SCRIPT" ]; then echo -e "[$YELLOW""WARN "$BLANK"] did not specify the execute script"; else echo -e "[$GREEN""INFO "$BLANK"] execute script: $EXECUTE_SCRIPT"; fi
 if [ -z "$DOCKER_FILE" ]; then echo -e "[$YELLOW""WARN "$BLANK"] did not specify the docker file"; else echo -e "[$GREEN""INFO "$BLANK"] docker file: $EXECUTE_SCRIPT"; fi
+
+# start capturing the build time
+START_TIME=`date +%s`
 
 # start building the container image
 echo "FROM ubuntu:$UBUNTU_VERSION" > Dockerfile
@@ -134,6 +143,11 @@ fi
 
 # build the docker image
 docker build -t profiler:$TAG .
+
+# finish capturing the build time
+END_TIME=`date +%s`
+RUNTIME=$(echo "$END_TIME - $START_TIME" | bc -l)
+echo -e "[$GREEN""INFO "$BLANK"] time to build the container image profiler:$TAG is $RUNTIME seconds";
 
 # check the docker image
 DOCKER_IMAGE=$(docker images | grep profiler | grep $TAG)
