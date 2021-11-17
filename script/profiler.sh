@@ -23,32 +23,33 @@ WHITE_SPACE="[[:space:]]"
 
 function usage()
 {
-    echo "Usage: $0 [profile|delta|csv|graph]"
+    echo "Usage: $0 [profile|aggregate|csv|graph]"
     echo "       profile: to profile a set of commands"
     echo "         -o   --output-directory       : specify the output directory for profiling data in JSON format"
     echo "         -t   --time-steps             : specify the time steps (in seconds) to profile during the command execution"
     echo "         -c   --clean-up               : clean up the profiling files from the previous run"
-    echo "       delta: calculate the delta values"
-    echo "         -i   --input-directory        : specify the input directory for calculating delta values in JSON format"
-    echo "         -o   --output-directory       : specify the output directory for calculating delta values in JSON format"
-    echo "         -c   --clean-up               : clean up the delta files from the previous run"
-    echo "       csv: generate records and put into CSV file from delta files"
-    echo "         -i   --input-directory        : specify the input directory of delta files"
+    echo "       aggregate: calculate the aggregate values"
+    echo "         -i   --input-directory        : specify the input directory for calculating aggregate values in JSON format"
+    echo "         -o   --output-directory       : specify the output directory for calculating aggregate values in JSON format"
+    echo "         -a   --aggregate-config-file  : specify the aggregate configuration file"
+    echo "         -c   --clean-up               : clean up the aggregate files from the previous run"
+    echo "       csv: generate records and put into CSV file from aggregate files"
+    echo "         -i   --input-directory        : specify the input directory of aggregate files"
     echo "         -o   --csv-output-file        : specify the output file for CSV file generation"
     echo "         -p   --process-output-file    : specify the output file for CSV file generation"
     echo "         -w   --overwrite              : overwrite the CSV file from the previous run"
-    echo "       graph: generate graphs from delta CSV file"
-    echo "         -r   --csv-input-file         : specify the delta CSV file"
+    echo "       graph: generate graphs from aggregate CSV file"
+    echo "         -r   --csv-input-file         : specify the aggregate CSV file"
     echo "         -m   --metric-input-file      : specify the metric file specifying metrics for graphing"
     echo "         -g   --graph-output-directory : specify the output directory for graph images"
     echo "         -s   --single-plot            : plot single curve on a graph"
     echo "Example:"
     echo "       $0 profile -o ./test -c -t 1 \"sleep 3\""
-    echo "       $0 delta -i test/ -o test/"
+    echo "       $0 aggregate -i test/ -o test/ -a /test/aggregate.cfg"
     echo "       $0 csv -w -i test/"
-    echo "       $0 csv -w -i test/ -o test/deltas.csv -p test/process.csv"
-    echo "       $0 graph -r deltas.csv -g test/ -m graph.ini"
-    echo "       $0 graph -r deltas.csv -g test/ -m graph.ini -s"
+    echo "       $0 csv -w -i test/ -o test/aggregate.csv -p test/process.csv"
+    echo "       $0 graph -r aggregate.csv -g test/ -m graph.ini"
+    echo "       $0 graph -r aggregate.csv -g test/ -m graph.ini -s"
     echo "Todo:"
     echo "     1. the profiling does not work logically when the time step > 0 and < 1 (generating the JSON files takes too long?)"
 }
@@ -185,13 +186,13 @@ function profile()
     fi
 }
 
-function delta()
+function aggregate()
 {
     # clean up status file from the previous work
     echo "" > status.log
 
     # capture the arguments
-    echo -e "[$GREEN""INFO "$BLANK"] calculating deltas ..."; shift
+    echo -e "[$GREEN""INFO "$BLANK"] calculating aggregate values ..."; shift
     eval set -- "$(getopt -a --options i:o:c -- "$@")"
     while true
     do
@@ -200,7 +201,7 @@ function delta()
                 PROFILING_INPUT_DIR=$2
                 shift 2;;
             -o|--output-directory)
-                DELTA_OUTPUT_DIR=$2
+                AGGREGATE_OUTPUT_DIR=$2
                 shift 2;;
             -c|--clean-up)
                 DO_CLEAN_UP=1
@@ -234,40 +235,40 @@ function delta()
     fi
 
     # check if the output directory is unset
-    if [ -z "$DELTA_OUTPUT_DIR" ]
+    if [ -z "$AGGREGATE_OUTPUT_DIR" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the output directory of profiling files."
         echo -e "[$YELLOW""WARN "$BLANK"] set it to the same directory of profiling files $YELLOW$PROFILING_INPUT_DIR$BLANK"
-        DELTA_OUTPUT_DIR=$PROFILING_INPUT_DIR
+        AGGREGATE_OUTPUT_DIR=$PROFILING_INPUT_DIR
     else
         # check if the output directory is absolute path
-        case $DELTA_OUTPUT_DIR in
+        case $AGGREGATE_OUTPUT_DIR in
             /*) ;;
-            ./*) DELTA_OUTPUT_DIR="$(pwd)/${DELTA_OUTPUT_DIR:2}" ;;
-            *) DELTA_OUTPUT_DIR="$(pwd)/${DELTA_OUTPUT_DIR}" ;;
+            ./*) AGGREGATE_OUTPUT_DIR="$(pwd)/${AGGREGATE_OUTPUT_DIR:2}" ;;
+            *) AGGREGATE_OUTPUT_DIR="$(pwd)/${AGGREGATE_OUTPUT_DIR}" ;;
         esac
 
         # check if the output directory is existed
-        if [ ! -d "$DELTA_OUTPUT_DIR" ]
+        if [ ! -d "$AGGREGATE_OUTPUT_DIR" ]
         then
             echo -e "[$YELLOW""WARN "$BLANK"] could not find the output directory $YELLOW$PROFILING_INPUT_DIR$BLANK"
             echo -e "[$YELLOW""WARN "$BLANK"] set it to the same directory of profiling files $YELLOW$PROFILING_INPUT_DIR$BLANK"
-            DELTA_OUTPUT_DIR=$PROFILING_INPUT_DIR
+            AGGREGATE_OUTPUT_DIR=$PROFILING_INPUT_DIR
         fi
     fi
 
     # print out arguments
     echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling files: $GREEN$PROFILING_INPUT_DIR$BLANK"
-    echo -e "[$GREEN""INFO "$BLANK"] the output directory of the profiling files: $GREEN$DELTA_OUTPUT_DIR$BLANK"
+    echo -e "[$GREEN""INFO "$BLANK"] the output directory of the profiling files: $GREEN$AGGREGATE_OUTPUT_DIR$BLANK"
 
     # clean up the output directory before profiling
     if [ ! -z "$DO_CLEAN_UP" ]
     then
-        find $DELTA_OUTPUT_DIR -name "delta_????_??_??_??_??_??.json" | xargs -r rm -f
+        find $AGGREGATE_OUTPUT_DIR -name "aggregate_????_??_??_??_??_??.json" | xargs -r rm -f
     fi
 
-    # start calculating deltas
-    # must sort all files in output directory to alternatively take the deltas
+    # start calculating aggregate values
+    # must sort all files in output directory to alternatively take the aggregate values
     PROFILING_FILES=$(find $PROFILING_INPUT_DIR -name "????_??_??_??_??_??.json" | sort)
     IFS=$'\n' read -rd '' -a PROFILING_FILES <<< "$PROFILING_FILES"
     SIZE=$((${#PROFILING_FILES[@]}-1))
@@ -275,11 +276,11 @@ function delta()
     for INDEX in $(seq 1 $SIZE)
     do
         PREV_INDEX=$(($INDEX-1))
-        ./delta.sh ${PROFILING_FILES[$INDEX]} ${PROFILING_FILES[$PREV_INDEX]} > $DELTA_OUTPUT_DIR/delta_$(date '+%Y_%m_%d_%H_%M_%S').json
+        ./aggregate.sh ${PROFILING_FILES[$INDEX]} ${PROFILING_FILES[$PREV_INDEX]} > $AGGREGATE_OUTPUT_DIR/aggregate_$(date '+%Y_%m_%d_%H_%M_%S').json
     done
 
-    # report the status code (assume the delta calculation is always correct)
-    echo -e "[$GREEN""INFO "$BLANK"] calculating deltas passed"
+    # report the status code (assume the aggregate calculation is always correct)
+    echo -e "[$GREEN""INFO "$BLANK"] calculating aggregate values passed"
     echo "passed" > status.log
 }
 
@@ -297,7 +298,7 @@ function csv()
             -i|--input-directory)
                 DELTA_INPUT_DIR=$2
                 shift 2;;
-            -o|--delta-output-file)
+            -o|--aggregate-output-file)
                 CSV_OUTPUT_FILE=$2
                 shift 2;;
             -p|--process-output-file)
@@ -314,7 +315,7 @@ function csv()
     # check if the input directory is unset
     if [ -z "$DELTA_INPUT_DIR" ]
     then
-        echo -e "[$YELLOW""WARN "$BLANK"] did not specify the input directory of delta files."
+        echo -e "[$YELLOW""WARN "$BLANK"] did not specify the input directory of aggregate files."
         echo -e "[$YELLOW""WARN "$BLANK"] set it to the current directory $YELLOW$(pwd)$BLANK"
         DELTA_INPUT_DIR="$(pwd)"
     else
@@ -337,9 +338,9 @@ function csv()
     # check if the CSV output file is unset
     if [ -z "$CSV_OUTPUT_FILE" ]
     then
-        echo -e "[$YELLOW""WARN "$BLANK"] did not specify the CSV output file for deltas."
-        echo -e "[$YELLOW""WARN "$BLANK"] set it to $YELLOW./deltas.csv$BLANK"
-        CSV_OUTPUT_FILE="$(pwd)/deltas.csv"
+        echo -e "[$YELLOW""WARN "$BLANK"] did not specify the CSV output file for aggregate values."
+        echo -e "[$YELLOW""WARN "$BLANK"] set it to $YELLOW./aggregate.csv$BLANK"
+        CSV_OUTPUT_FILE="$(pwd)/aggregate.csv"
     else
         # check if the CSV output file is absolute path
         case $CSV_OUTPUT_FILE in
@@ -392,7 +393,7 @@ function csv()
     echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$DELTA_INPUT_DIR$BLANK"
     echo -e "[$GREEN""INFO "$BLANK"] the CSV output file of the profiling: $GREEN$CSV_OUTPUT_FILE$BLANK"
 
-    DELTA_FILES=$(find $DELTA_INPUT_DIR -name "delta_????_??_??_??_??_??.json" | sort)
+    DELTA_FILES=$(find $DELTA_INPUT_DIR -name "aggregate_????_??_??_??_??_??.json" | sort)
     for DELTA_FILE in $DELTA_FILES
     do
         jq -r '[.Container_Write_Time,.Process_Write_Time,.VM_Write_Time,.cCpuTime,.cCpuTimeKernelMode,.cCpuTimeUserMode,.cDiskReadBytes,.cDiskSectorIO,.cDiskWriteBytes,.cId,.cMajorPGFault,.cMemoryMaxUsed,.cMemoryUsed,.cNetworkBytesRecvd,.cNetworkBytesSent,.cNumProcesses,.cNumProcessors,.cPGFault,.currentTime,.pMetricType,.vBootTime,.vCpuContextSwitches,.vCpuIdleTime,.vCpuMhz,.vCpuNice,.vCpuSteal,.vCpuTime,.vCpuTimeIOWait,.vCpuTimeIntSrvc,.vCpuTimeKernelMode,.vCpuTimeSoftIntSrvc,.vCpuTimeUserMode,.vCpuType,.vDiskMergedReads,.vDiskMergedWrites,.vDiskReadTime,.vDiskSectorReads,.vDiskSectorWrites,.vDiskSuccessfulReads,.vDiskSuccessfulWrites,.vDiskWriteTime,.vId,.vKernelInfo,.vLoadAvg,.vMajorPageFault,.vMemoryBuffers,.vMemoryCached,.vMemoryFree,.vMemoryTotal,.vMetricType,.vNetworkBytesRecvd,.vNetworkBytesSent,.vPgFault] | @csv' $DELTA_FILE >> $CSV_OUTPUT_FILE
@@ -552,8 +553,8 @@ fi
 case "$1" in
     "profile")
         profile "$@" ;;
-    "delta")
-        delta "$@" ;;
+    "aggregate")
+        aggregate "$@" ;;
     "csv")
         csv "$@" ;;
     "graph")

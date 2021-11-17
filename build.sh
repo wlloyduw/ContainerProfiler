@@ -185,9 +185,9 @@ else
     echo -e "\t-v \${PWD}:/data \\"
     echo -e "\t profiler:$TAG YOUR_ARUMENTS_GO_HERE"
     
-    echo -e "[$GREEN""INFO "$BLANK"] an example of calculating deltas"
+    echo -e "[$GREEN""INFO "$BLANK"] an example of calculating aggregate values"
     echo -e "$GREEN\$$BLANK sudo docker run --rm \\"
-    echo -e "\t-e TOOL=delta \\"
+    echo -e "\t-e TOOL=aggregate \\"
     echo -e "\t-e TOOL_ARGUMENTS=\"-i /data -o /data\" \\"
     echo -e "\t-v \${PWD}:/data \\"
     echo -e "\t profiler:$TAG"
@@ -195,21 +195,21 @@ else
     echo -e "[$GREEN""INFO "$BLANK"] an example of generating CSV file"
     echo -e "$GREEN\$$BLANK sudo docker run --rm \\"
     echo -e "\t-e TOOL=csv \\"
-    echo -e "\t-e TOOL_ARGUMENTS=\"-w -i /data -o /data/deltas.csv -p /data/process.csv\" \\"
+    echo -e "\t-e TOOL_ARGUMENTS=\"-w -i /data -o /data/aggregate.csv -p /data/process.csv\" \\"
     echo -e "\t-v \${PWD}:/data \\"
     echo -e "\t profiler:$TAG"
     
     echo -e "[$GREEN""INFO "$BLANK"] an example of generating CSV file"
     echo -e "$GREEN\$$BLANK sudo docker run --rm \\"
     echo -e "\t-e TOOL=graph \\"
-    echo -e "\t-e TOOL_ARGUMENTS=\"-r /data/deltas.csv -g /data -m /data/cfg/graph.cfg -s\" \\"
+    echo -e "\t-e TOOL_ARGUMENTS=\"-r /data/aggregate.csv -g /data -m /data/cfg/graph.cfg -s\" \\"
     echo -e "\t-v \${PWD}:/data \\"
     echo -e "\t profiler:$TAG"
 fi
 rm Dockerfile
 exit
 
-python plotly_graph_generation.py -s 1 --infile deltas.csv graph_generation_config.ini
+python plotly_graph_generation.py -s 1 --infile aggregate.csv graph_generation_config.ini
 sudo ./build.sh -d docker/sysbench.docker
 
 --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
