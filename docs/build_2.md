@@ -24,6 +24,8 @@ OUTPUT_DIR: the directory that holds profiling files in JSON format
 
 ## (UC4) How do I perform time series profiling of a task or application
 
+The idea is to add the '-t' argument to specify a time series sampling interval.
+
 ```bash
 sudo docker run --rm
     -v ${PWD}:/OUTPUT_DIR
@@ -36,7 +38,12 @@ For example:
 sudo docker run --rm -v ${PWD}:/data  profiler:custom profile -t 1 -o /data "sleep 5; ls -al"
 ```
 
-# (UC12) How do I build a container that integrates the ContainerProfiler using my own Docker file
+# (UC12) How do I build a new container that integrates the ContainerProfiler into on an existing container
+
+You will need access to the Dockerfile used to build your container.
+The idea is that your container will already be configured to run a specified task or application, and 
+we simply want to integrate the container profiler so it is easy to profile.
+The idea is to point to the folder containing your Dockerfile and any other dependencies.
 
 ```bash
 sudo ./build.sh -d DOCKER_FILE_PATH
@@ -48,7 +55,7 @@ For example:
 sudo ./build.sh -d docker/sysbench.docker
 ```
 
-## (UC1) How do I profile a task or application
+## (UC1) How do I profile my container once I've integrated the ContainerProfiler 
 
 ```bash
 sudo docker run --rm \
@@ -68,7 +75,9 @@ sudo docker run --rm \
     profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
 ```
 
-## (UC2) How do I perform time series sampling
+## (UC2) How do I perform time series sampling on my container once I've integrated the ContainerProfiler
+
+The idea is to add the '-t' argument to specify a time series sampling interval.
 
 ```bash
 sudo docker run --rm \
