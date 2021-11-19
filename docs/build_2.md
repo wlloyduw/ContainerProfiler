@@ -24,7 +24,7 @@ OUTPUT_DIR: the directory that holds profiling files in JSON format
 
 ## (UC4) How do I perform time series profiling of a task or application
 
-The idea is to add the '-t' argument to specify a time series sampling interval.  (e.g. -t 1 for 1-second sampling)
+The idea is to add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
 
 ```bash
 sudo docker run --rm
@@ -77,7 +77,7 @@ sudo docker run --rm \
 
 ## (UC2) How do I perform time series sampling on my container once I've integrated the ContainerProfiler
 
-The idea is to add the '-t' argument to specify a time series sampling interval.  (e.g. -t 1 for 1-second sampling)
+The idea is to add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
 
 ```bash
 sudo docker run --rm \
@@ -145,7 +145,7 @@ sudo docker run --rm \
 After the container name 'profiler:sysbench' you will need to specify any command line arguments
 for the application being profiled.
 
-In addition, add the '-t' argument to specify a time series sampling interval.  (e.g. -t 1 for 1-second sampling)
+In addition, add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
 
 ```bash
 sudo docker run --rm \
