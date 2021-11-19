@@ -22,7 +22,7 @@ sudo docker run --rm -v ${PWD}:/data  profiler:custom profile -o /data "sleep 5;
 
 OUTPUT_DIR: the directory that holds profiling files in JSON format
 
-## (UC4) How do I profile a task or application
+## (UC4) How do I perform time series profiling of a task or application
 
 ```bash
 sudo docker run --rm
