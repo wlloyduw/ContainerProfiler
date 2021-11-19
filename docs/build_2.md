@@ -112,14 +112,14 @@ For example:
 sudo ./build.sh -i docker/install.sh
 ```
 
-You will be asked to enter an entry point based on the software you attempt to install in your install script
+You will be asked to enter an entry point based on the software you attempt to install in your install script.
 The entry point is the name of the command (without any arguments) that will be run.
 For example, if the installation script installs sysbench, then the name of the command will be 'sysbench'.
-Later, when running the container you do not need to specify the command again, but only any arguments to be passed to the command.
+Later, when running the container you do not need to specify the command again, but just the arguments that are to be passed to the command.
 
 ## (UC5) How do I profile a task or application installed using the installation script
 
-After the container name 'profiler:sysbench' you will need to specify any command line arguments
+After the container name 'profiler:sysbench' you will need to specify the command line arguments
 for the application being profiled.
 
 ```bash
@@ -142,7 +142,7 @@ sudo docker run --rm \
 
 ## (UC5) How do I perform time series sampling of the task or application installed using the installation script
 
-After the container name 'profiler:sysbench' you will need to specify any command line arguments
+After the container name 'profiler:sysbench' you will need to specify the command line arguments
 for the application being profiled.
 
 In addition, add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
