@@ -193,7 +193,7 @@ function aggregate()
 
     # capture the arguments
     echo -e "[$GREEN""INFO "$BLANK"] calculating aggregate values ..."; shift
-    eval set -- "$(getopt -a --options i:o:c -- "$@")"
+    eval set -- "$(getopt -a --options i:o:a:c -- "$@")"
     while true
     do
         case "$1" in
@@ -202,6 +202,9 @@ function aggregate()
                 shift 2;;
             -o|--output-directory)
                 AGGREGATE_OUTPUT_DIR=$2
+                shift 2;;
+            -a|--aggregate-configuration)
+                AGGREGATE_CONFIG_FILE=$2
                 shift 2;;
             -c|--clean-up)
                 DO_CLEAN_UP=1
@@ -296,7 +299,7 @@ function csv()
     do
         case "$1" in
             -i|--input-directory)
-                DELTA_INPUT_DIR=$2
+                AGGREGATE_INPUT_DIR=$2
                 shift 2;;
             -o|--aggregate-output-file)
                 CSV_OUTPUT_FILE=$2
@@ -313,25 +316,25 @@ function csv()
     done
 
     # check if the input directory is unset
-    if [ -z "$DELTA_INPUT_DIR" ]
+    if [ -z "$AGGREGATE_INPUT_DIR" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the input directory of aggregate files."
         echo -e "[$YELLOW""WARN "$BLANK"] set it to the current directory $YELLOW$(pwd)$BLANK"
-        DELTA_INPUT_DIR="$(pwd)"
+        AGGREGATE_INPUT_DIR="$(pwd)"
     else
         # check if the output directory is absolute path
-        case $DELTA_INPUT_DIR in
+        case $AGGREGATE_INPUT_DIR in
             /*) ;;
-            ./*) DELTA_INPUT_DIR="$(pwd)/${DELTA_INPUT_DIR:2}" ;;
-            *) DELTA_INPUT_DIR="$(pwd)/${DELTA_INPUT_DIR}" ;;
+            ./*) AGGREGATE_INPUT_DIR="$(pwd)/${AGGREGATE_INPUT_DIR:2}" ;;
+            *) AGGREGATE_INPUT_DIR="$(pwd)/${AGGREGATE_INPUT_DIR}" ;;
         esac
 
         # check if the output directory is existed
-        if [ ! -d "$DELTA_INPUT_DIR" ]
+        if [ ! -d "$AGGREGATE_INPUT_DIR" ]
         then
-            echo -e "[$YELLOW""WARN "$BLANK"] could not find the input directory $YELLOW$DELTA_INPUT_DIR$BLANK"
+            echo -e "[$YELLOW""WARN "$BLANK"] could not find the input directory $YELLOW$AGGREGATE_INPUT_DIR$BLANK"
             echo -e "[$YELLOW""WARN "$BLANK"] set it to the current directory $YELLOW$(pwd)$BLANK"
-            DELTA_INPUT_DIR="$(pwd)"
+            AGGREGATE_INPUT_DIR="$(pwd)"
         fi
     fi
 
@@ -390,26 +393,26 @@ function csv()
     echo "$PROC_FIELDS" >> $PROC_OUTPUT_FILE
 
     # print out arguments
-    echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$DELTA_INPUT_DIR$BLANK"
+    echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$AGGREGATE_INPUT_DIR$BLANK"
     echo -e "[$GREEN""INFO "$BLANK"] the CSV output file of the profiling: $GREEN$CSV_OUTPUT_FILE$BLANK"
 
-    DELTA_FILES=$(find $DELTA_INPUT_DIR -name "aggregate_????_??_??_??_??_??.json" | sort)
-    for DELTA_FILE in $DELTA_FILES
+    AGGREGATE_FILES=$(find $AGGREGATE_INPUT_DIR -name "aggregate_????_??_??_??_??_??.json" | sort)
+    for AGGREGATE_FILE in $AGGREGATE_FILES
     do
-        jq -r '[.Container_Write_Time,.Process_Write_Time,.VM_Write_Time,.cCpuTime,.cCpuTimeKernelMode,.cCpuTimeUserMode,.cDiskReadBytes,.cDiskSectorIO,.cDiskWriteBytes,.cId,.cMajorPGFault,.cMemoryMaxUsed,.cMemoryUsed,.cNetworkBytesRecvd,.cNetworkBytesSent,.cNumProcesses,.cNumProcessors,.cPGFault,.currentTime,.pMetricType,.vBootTime,.vCpuContextSwitches,.vCpuIdleTime,.vCpuMhz,.vCpuNice,.vCpuSteal,.vCpuTime,.vCpuTimeIOWait,.vCpuTimeIntSrvc,.vCpuTimeKernelMode,.vCpuTimeSoftIntSrvc,.vCpuTimeUserMode,.vCpuType,.vDiskMergedReads,.vDiskMergedWrites,.vDiskReadTime,.vDiskSectorReads,.vDiskSectorWrites,.vDiskSuccessfulReads,.vDiskSuccessfulWrites,.vDiskWriteTime,.vId,.vKernelInfo,.vLoadAvg,.vMajorPageFault,.vMemoryBuffers,.vMemoryCached,.vMemoryFree,.vMemoryTotal,.vMetricType,.vNetworkBytesRecvd,.vNetworkBytesSent,.vPgFault] | @csv' $DELTA_FILE >> $CSV_OUTPUT_FILE
+        jq -r '[.Container_Write_Time,.Process_Write_Time,.VM_Write_Time,.cCpuTime,.cCpuTimeKernelMode,.cCpuTimeUserMode,.cDiskReadBytes,.cDiskSectorIO,.cDiskWriteBytes,.cId,.cMajorPGFault,.cMemoryMaxUsed,.cMemoryUsed,.cNetworkBytesRecvd,.cNetworkBytesSent,.cNumProcesses,.cNumProcessors,.cPGFault,.currentTime,.pMetricType,.vBootTime,.vCpuContextSwitches,.vCpuIdleTime,.vCpuMhz,.vCpuNice,.vCpuSteal,.vCpuTime,.vCpuTimeIOWait,.vCpuTimeIntSrvc,.vCpuTimeKernelMode,.vCpuTimeSoftIntSrvc,.vCpuTimeUserMode,.vCpuType,.vDiskMergedReads,.vDiskMergedWrites,.vDiskReadTime,.vDiskSectorReads,.vDiskSectorWrites,.vDiskSuccessfulReads,.vDiskSuccessfulWrites,.vDiskWriteTime,.vId,.vKernelInfo,.vLoadAvg,.vMajorPageFault,.vMemoryBuffers,.vMemoryCached,.vMemoryFree,.vMemoryTotal,.vMetricType,.vNetworkBytesRecvd,.vNetworkBytesSent,.vPgFault] | @csv' $AGGREGATE_FILE >> $CSV_OUTPUT_FILE
     
-        pId=$(jq -r ".pProcesses[].pId" $DELTA_FILE)
-        pCmdline=$(jq -r ".pProcesses[].pCmdline" $DELTA_FILE)
-        pName=$(jq -r ".pProcesses[].pName" $DELTA_FILE)
-        pNumThreads=$(jq -r ".pProcesses[].pNumThreads" $DELTA_FILE)
-        pCpuTimeUserMode=$(jq -r ".pProcesses[].pCpuTimeUserMode" $DELTA_FILE)
-        pCpuTimeKernelMode=$(jq -r ".pProcesses[].pCpuTimeKernelMode" $DELTA_FILE)
-        pChildrenUserMode=$(jq -r ".pProcesses[].pChildrenUserMode" $DELTA_FILE)
-        pChildrenKernelMode=$(jq -r ".pProcesses[].pChildrenKernelMode" $DELTA_FILE)
-        pVoluntaryContextSwitches=$(jq -r ".pProcesses[].pVoluntaryContextSwitches" $DELTA_FILE)
-        pInvoluntaryContextSwitches=$(jq -r ".pProcesses[].pInvoluntaryContextSwitches" $DELTA_FILE)
-        pBlockIODelays=$(jq -r ".pProcesses[].pBlockIODelays" $DELTA_FILE)
-        pVirtualMemoryBytes=$(jq -r ".pProcesses[].pVirtualMemoryBytes" $DELTA_FILE)
+        pId=$(jq -r ".pProcesses[].pId" $AGGREGATE_FILE)
+        pCmdline=$(jq -r ".pProcesses[].pCmdline" $AGGREGATE_FILE)
+        pName=$(jq -r ".pProcesses[].pName" $AGGREGATE_FILE)
+        pNumThreads=$(jq -r ".pProcesses[].pNumThreads" $AGGREGATE_FILE)
+        pCpuTimeUserMode=$(jq -r ".pProcesses[].pCpuTimeUserMode" $AGGREGATE_FILE)
+        pCpuTimeKernelMode=$(jq -r ".pProcesses[].pCpuTimeKernelMode" $AGGREGATE_FILE)
+        pChildrenUserMode=$(jq -r ".pProcesses[].pChildrenUserMode" $AGGREGATE_FILE)
+        pChildrenKernelMode=$(jq -r ".pProcesses[].pChildrenKernelMode" $AGGREGATE_FILE)
+        pVoluntaryContextSwitches=$(jq -r ".pProcesses[].pVoluntaryContextSwitches" $AGGREGATE_FILE)
+        pInvoluntaryContextSwitches=$(jq -r ".pProcesses[].pInvoluntaryContextSwitches" $AGGREGATE_FILE)
+        pBlockIODelays=$(jq -r ".pProcesses[].pBlockIODelays" $AGGREGATE_FILE)
+        pVirtualMemoryBytes=$(jq -r ".pProcesses[].pVirtualMemoryBytes" $AGGREGATE_FILE)
 
         IFS=$'\n' read -rd '' -a pId <<< "$pId"
         IFS=$'\n' read -rd '' -a pCmdline <<< "$pCmdline"

@@ -97,15 +97,15 @@ function print_aggregations
                             ;;
 
                         "sum")
-                            AGG_RS=$(bc -l <<< "$VALUE_2 + $VALUE_1")
+                            AGG_RS=$(bc -l <<< "$VALUE_1 + $VALUE_2")
                             ;;
 
                         "avg")
-                            AGG_RS=$(bc -l <<< "($VALUE_2 + $VALUE_1) / 2")
+                            AGG_RS=$(bc -l <<< "($VALUE_1 + $VALUE_2) / 2")
                             ;;
 
                         *) # delta
-                            AGG_RS=$(bc -l <<< "$VALUE_2 - $VALUE_1")
+                            AGG_RS=$(bc -l <<< "$VALUE_1 - $VALUE_2")
                             ;;
                         
                     esac
