@@ -28,7 +28,7 @@ function usage()
     echo "         -o   --output-directory       : specify the output directory for profiling data in JSON format"
     echo "         -t   --time-steps             : specify the time steps (in seconds) to profile during the command execution"
     echo "         -c   --clean-up               : clean up the profiling files from the previous run"
-    echo "       aggregate: calculate the aggregate values"
+    echo "       delta: calculate the aggregate values"
     echo "         -i   --input-directory        : specify the input directory for calculating aggregate values in JSON format"
     echo "         -o   --output-directory       : specify the output directory for calculating aggregate values in JSON format"
     echo "         -a   --aggregate-config-file  : specify the aggregate configuration file"
@@ -45,7 +45,7 @@ function usage()
     echo "         -s   --single-plot            : plot single curve on a graph"
     echo "Example:"
     echo "       $0 profile -o ./test -c -t 1 \"sleep 3\""
-    echo "       $0 aggregate -i test/ -o test/ -a /test/aggregate.cfg"
+    echo "       $0 delta -i test/ -o test/ -a /test/aggregate.cfg"
     echo "       $0 csv -w -i test/"
     echo "       $0 csv -w -i test/ -o test/aggregate.csv -p test/process.csv"
     echo "       $0 graph -r aggregate.csv -g test/ -m graph.ini"
@@ -267,7 +267,7 @@ function aggregate()
     # clean up the output directory before profiling
     if [ ! -z "$DO_CLEAN_UP" ]
     then
-        find $AGGREGATE_OUTPUT_DIR -name "aggregate_????_??_??_??_??_??.json" | xargs -r rm -f
+        find $AGGREGATE_OUTPUT_DIR -name "delta_????_??_??_??_??_??.json" | xargs -r rm -f
     fi
 
     # start calculating aggregate values
@@ -279,7 +279,7 @@ function aggregate()
     for INDEX in $(seq 1 $SIZE)
     do
         PREV_INDEX=$(($INDEX-1))
-        ./aggregate.sh ${PROFILING_FILES[$INDEX]} ${PROFILING_FILES[$PREV_INDEX]} > $AGGREGATE_OUTPUT_DIR/aggregate_$(date '+%Y_%m_%d_%H_%M_%S').json
+        ./aggregate.sh ${PROFILING_FILES[$INDEX]} ${PROFILING_FILES[$PREV_INDEX]} $AGGREGATE_CONFIG_FILE > $AGGREGATE_OUTPUT_DIR/delta_$(date '+%Y_%m_%d_%H_%M_%S').json
     done
 
     # report the status code (assume the aggregate calculation is always correct)
@@ -342,8 +342,8 @@ function csv()
     if [ -z "$CSV_OUTPUT_FILE" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the CSV output file for aggregate values."
-        echo -e "[$YELLOW""WARN "$BLANK"] set it to $YELLOW./aggregate.csv$BLANK"
-        CSV_OUTPUT_FILE="$(pwd)/aggregate.csv"
+        echo -e "[$YELLOW""WARN "$BLANK"] set it to $YELLOW./delta.csv$BLANK"
+        CSV_OUTPUT_FILE="$(pwd)/delta.csv"
     else
         # check if the CSV output file is absolute path
         case $CSV_OUTPUT_FILE in
@@ -396,7 +396,7 @@ function csv()
     echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$AGGREGATE_INPUT_DIR$BLANK"
     echo -e "[$GREEN""INFO "$BLANK"] the CSV output file of the profiling: $GREEN$CSV_OUTPUT_FILE$BLANK"
 
-    AGGREGATE_FILES=$(find $AGGREGATE_INPUT_DIR -name "aggregate_????_??_??_??_??_??.json" | sort)
+    AGGREGATE_FILES=$(find $AGGREGATE_INPUT_DIR -name "delta_????_??_??_??_??_??.json" | sort)
     for AGGREGATE_FILE in $AGGREGATE_FILES
     do
         jq -r '[.Container_Write_Time,.Process_Write_Time,.VM_Write_Time,.cCpuTime,.cCpuTimeKernelMode,.cCpuTimeUserMode,.cDiskReadBytes,.cDiskSectorIO,.cDiskWriteBytes,.cId,.cMajorPGFault,.cMemoryMaxUsed,.cMemoryUsed,.cNetworkBytesRecvd,.cNetworkBytesSent,.cNumProcesses,.cNumProcessors,.cPGFault,.currentTime,.pMetricType,.vBootTime,.vCpuContextSwitches,.vCpuIdleTime,.vCpuMhz,.vCpuNice,.vCpuSteal,.vCpuTime,.vCpuTimeIOWait,.vCpuTimeIntSrvc,.vCpuTimeKernelMode,.vCpuTimeSoftIntSrvc,.vCpuTimeUserMode,.vCpuType,.vDiskMergedReads,.vDiskMergedWrites,.vDiskReadTime,.vDiskSectorReads,.vDiskSectorWrites,.vDiskSuccessfulReads,.vDiskSuccessfulWrites,.vDiskWriteTime,.vId,.vKernelInfo,.vLoadAvg,.vMajorPageFault,.vMemoryBuffers,.vMemoryCached,.vMemoryFree,.vMemoryTotal,.vMetricType,.vNetworkBytesRecvd,.vNetworkBytesSent,.vPgFault] | @csv' $AGGREGATE_FILE >> $CSV_OUTPUT_FILE
@@ -556,7 +556,7 @@ fi
 case "$1" in
     "profile")
         profile "$@" ;;
-    "aggregate")
+    "delta")
         aggregate "$@" ;;
     "csv")
         csv "$@" ;;

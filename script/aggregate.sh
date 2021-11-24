@@ -24,6 +24,10 @@ fi
 
 AGG_CONFIG=aggregate.cfg
 DEBUG_FILE=debug.log
+if [ ! -z "$3" ] && [ -f "$3" ]
+then
+    AGG_CONFIG="$3"
+fi
 
 function print_aggregations
 {
