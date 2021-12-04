@@ -1,7 +1,7 @@
 #!/bin/bash
 #======================================================================
 #- IMPLEMENTATION
-#-    version         profiler (https://www.washington.edu/) 0.4
+#-    version         profiler (https://www.washington.edu/) 0.5
 #-    author          Varik Hoang <varikmp@uw.edu>
 #-    copyright       Copyright (c) https://www.washington.edu/
 #-    license         GNU General Public License
@@ -9,10 +9,12 @@
 #  HISTORY
 #     2021/05/19 : varikmp - script creation
 #     2021/08/12 : varikmp - implemented time steps for sampling
+#     2021/12/03 : varikmp - change the time steps to milliseconds
+#                          - generate static metrics separately
 #======================================================================
 #  OPTION
 #    PROFILER_OUTPUT_DIR # specify the output directory
-#    PROFILER_TIME_STEPS # specify the time step each second
+#    PROFILER_TIME_STEPS # specify the time step each milliseconds
 #======================================================================
 
 RED='\e[91m'
@@ -26,7 +28,7 @@ function usage()
     echo "Usage: $0 [profile|aggregate|csv|graph]"
     echo "       profile: to profile a set of commands"
     echo "         -o   --output-directory       : specify the output directory for profiling data in JSON format"
-    echo "         -t   --time-steps             : specify the time steps (in seconds) to profile during the command execution"
+    echo "         -t   --time-steps             : specify the time steps (in milliseconds) to profile during the command execution"
     echo "         -c   --clean-up               : clean up the profiling files from the previous run"
     echo "       delta: calculate the aggregate values"
     echo "         -i   --input-directory        : specify the input directory for calculating aggregate values in JSON format"
@@ -135,7 +137,7 @@ function profile()
 
     # print out arguments
     echo -e "[$GREEN""INFO "$BLANK"] the output directory for the profiling files: $GREEN$PROFILER_OUTPUT_DIR$BLANK"
-    echo -e "[$GREEN""INFO "$BLANK"] the time steps (in seconds) for the profiling: $GREEN$PROFILER_TIME_STEPS$BLANK"
+    echo -e "[$GREEN""INFO "$BLANK"] the time steps (in milliseconds) for the profiling: $GREEN$PROFILER_TIME_STEPS$BLANK"
     echo -e "[$GREEN""INFO "$BLANK"] the set of commands for the profiling: $GREEN$PROFILER_COMMAND_SET$BLANK"
 
     # clean up the output directory before profiling
