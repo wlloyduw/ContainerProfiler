@@ -1,8 +1,6 @@
 MAINTAINER varikmp<varikmp@uw.edu>
 ENV DEBIAN_FRONTEND noninteractive
-ENV HOME /root
-COPY docker/*.sh .
-RUN chmod +x entrypoint.sh && chmod +x installation.sh && ./installation.sh
+ENV HOME /
 RUN apt-get update \
     && apt-get install --no-install-recommends -y wget unzip python \
     && wget --no-check-certificate -O hisat2-2.2.1-Linux_x86_64.zip https://cloud.biohpc.swmed.edu/index.php/s/oTtGWbWjaxsQ2Ho/download && unzip hisat2-2.2.1-Linux_x86_64.zip \

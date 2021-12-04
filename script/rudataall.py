@@ -402,13 +402,15 @@ print_console=print
 profile_time=time.time()
 profile_command()
 profile_time=time.time()-profile_time
-time.sleep((time_series-profile_time)/1000)
+if time_series > profile_time:
+    time.sleep((time_series-profile_time)/1000)
 print_console=print_nothing
 while is_process_running():
     profile_time=time.time()
     profile_command()
     profile_time=time.time()-profile_time
-    time.sleep((time_series-profile_time)/1000)
+    if time_series > profile_time:
+        time.sleep((time_series-profile_time)/1000)
 
 if time_series != 0:
     os.remove("./profile.pid")
