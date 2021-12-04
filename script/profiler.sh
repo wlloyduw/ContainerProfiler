@@ -45,13 +45,12 @@ function usage()
     echo "         -s   --single-plot            : plot single curve on a graph"
     echo "Example:"
     echo "       $0 profile -o ./test -c -t 1 \"sleep 3\""
+    echo "       $0 delta -i test/ -o test/"
     echo "       $0 delta -i test/ -o test/ -a /test/aggregate.cfg"
     echo "       $0 csv -w -i test/"
-    echo "       $0 csv -w -i test/ -o test/aggregate.csv -p test/process.csv"
-    echo "       $0 graph -r aggregate.csv -g test/ -m graph.ini"
-    echo "       $0 graph -r aggregate.csv -g test/ -m graph.ini -s"
-    echo "Todo:"
-    echo "     1. the profiling does not work logically when the time step > 0 and < 1 (generating the JSON files takes too long?)"
+    echo "       $0 csv -w -i test/ -o test/delta.csv"
+    echo "       $0 graph -r delta.csv -g test/ -m graph.cfg"
+    echo "       $0 graph -r delta.csv -g test/ -m graph.cfg -s"
 }
 
 function error()
@@ -163,14 +162,19 @@ function profile()
         eval "$@" & PID=$!
 
         # keep checking the process id until it finishes in time steps
-        while kill -0 $PID > /dev/null 2>&1
-        do
-            python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
-            sleep $PROFILER_TIME_STEPS
-        done
+        #while kill -0 $PID > /dev/null 2>&1
+        #do
+        #    python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
+        #    sleep $PROFILER_TIME_STEPS
+        #done
 
         # capture the status code
-        wait $PID
+        #wait $PID
+        #STATUS=$?
+        
+        # https://github.com/wlloyduw/ContainerProfiler/blob/david/ubuntu/entrypoint.sh
+        echo $PID > profile.pid
+        python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR $PROFILER_TIME_STEPS
         STATUS=$?
     fi
 
@@ -287,6 +291,64 @@ function aggregate()
     echo "passed" > status.log
 }
 
+function keys()
+{
+    JSON_FILE=$1
+    local CURRENT_PATH=$2
+
+    if [ -z "$CURRENT_PATH" ]; then
+        KEY_LIST=$(jq $CURRENT_PATH'keys' "$1" | sed '1d;$d;s/,$//;s/^ *//g;s/^.//g;s/.$//g' | tr '\r\n' ' ')
+    else
+        KEY_LIST=$(jq $CURRENT_PATH'|keys' "$1" | sed '1d;$d;s/,$//;s/^ *//g;s/^.//g;s/.$//g' | tr '\r\n' ' ')
+    fi
+
+    if [ ! -z "$KEY_LIST" ]
+    then
+        for KEY in ${KEY_LIST[@]}
+        do
+            case "$(jq -r $CURRENT_PATH[\"$KEY\"]\|type "$1" <<< '""')" in
+
+                "object")
+                    keys "$JSON_FILE" "$CURRENT_PATH[\"$KEY\"]"
+                    ;;
+
+                *)
+					printf "$KEY,"
+					;;
+            esac
+        done
+    fi
+}
+
+function values()
+{
+	JSON_FILE=$1
+    local CURRENT_PATH=$2
+
+    if [ -z "$CURRENT_PATH" ]; then
+        KEY_LIST=$(jq $CURRENT_PATH'keys' "$1" | sed '1d;$d;s/,$//;s/^ *//g;s/^.//g;s/.$//g' | tr '\r\n' ' ')
+    else
+        KEY_LIST=$(jq $CURRENT_PATH'|keys' "$1" | sed '1d;$d;s/,$//;s/^ *//g;s/^.//g;s/.$//g' | tr '\r\n' ' ')
+    fi
+
+    if [ ! -z "$KEY_LIST" ]
+    then
+        for KEY in ${KEY_LIST[@]}
+        do
+            case "$(jq -r $CURRENT_PATH[\"$KEY\"]\|type "$1" <<< '""')" in
+
+                "object")
+                    values "$JSON_FILE" "$CURRENT_PATH[\"$KEY\"]"
+                    ;;
+
+                *)
+					printf "$(jq -r $CURRENT_PATH[\"$KEY\"] "$1" <<< '""'),"
+					;;
+            esac
+        done
+    fi
+}
+
 function csv()
 {
     # clean up status file from the previous work
@@ -299,7 +361,7 @@ function csv()
     do
         case "$1" in
             -i|--input-directory)
-                AGGREGATE_INPUT_DIR=$2
+                DELTA_INPUT_DIR=$2
                 shift 2;;
             -o|--aggregate-output-file)
                 CSV_OUTPUT_FILE=$2
@@ -316,33 +378,56 @@ function csv()
     done
 
     # check if the input directory is unset
-    if [ -z "$AGGREGATE_INPUT_DIR" ]
+    if [ -z "$DELTA_INPUT_DIR" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the input directory of aggregate files."
         echo -e "[$YELLOW""WARN "$BLANK"] set it to the current directory $YELLOW$(pwd)$BLANK"
-        AGGREGATE_INPUT_DIR="$(pwd)"
+        DELTA_INPUT_DIR="$(pwd)"
     else
         # check if the output directory is absolute path
-        case $AGGREGATE_INPUT_DIR in
+        case $DELTA_INPUT_DIR in
             /*) ;;
-            ./*) AGGREGATE_INPUT_DIR="$(pwd)/${AGGREGATE_INPUT_DIR:2}" ;;
-            *) AGGREGATE_INPUT_DIR="$(pwd)/${AGGREGATE_INPUT_DIR}" ;;
+            ./*) DELTA_INPUT_DIR="$(pwd)/${DELTA_INPUT_DIR:2}" ;;
+            *) DELTA_INPUT_DIR="$(pwd)/${DELTA_INPUT_DIR}" ;;
         esac
 
         # check if the output directory is existed
-        if [ ! -d "$AGGREGATE_INPUT_DIR" ]
+        if [ ! -d "$DELTA_INPUT_DIR" ]
         then
-            echo -e "[$YELLOW""WARN "$BLANK"] could not find the input directory $YELLOW$AGGREGATE_INPUT_DIR$BLANK"
+            echo -e "[$YELLOW""WARN "$BLANK"] could not find the input directory $YELLOW$DELTA_INPUT_DIR$BLANK"
             echo -e "[$YELLOW""WARN "$BLANK"] set it to the current directory $YELLOW$(pwd)$BLANK"
-            AGGREGATE_INPUT_DIR="$(pwd)"
+            DELTA_INPUT_DIR="$(pwd)"
         fi
     fi
+    
+    # check for the static metrics
+    FOUND_STATIC=$(find $DELTA_INPUT_DIR -name "static.json")
+    if [ -z "$FOUND_STATIC" ]
+    then
+        echo -e "[$RED""WARN "$BLANK"] could not find static file (static.json) in $DELTA_INPUT_DIR"
+    else
+        STATIC_FIELDS=$(keys $DELTA_INPUT_DIR/static.json .)
+        STATIC_VALUES=$(values $DELTA_INPUT_DIR/static.json .)
+    fi
+    
+    # set up fields
+    #PROC_FIELDS="pId,pCmdline,pName,pNumThreads,pCpuTimeUserMode,pCpuTimeKernelMode,pChildrenUserMode,pChildrenKernelMode,pVoluntaryContextSwitches,pInvoluntaryContextSwitches,pBlockIODelays,pVirtualMemoryBytes"
+    FOUND_DELTA=$(find $DELTA_INPUT_DIR -name "delta_????_??_??_??_??_??.json")
+    if [ -z "$FOUND_DELTA" ]
+    then
+        echo -e "[$RED""ERROR"$BLANK"] could not find any delta files in $DELTA_INPUT_DIR"
+        exit
+    fi
+    
+    DELTA_TEMPLATE_FILE=$(echo ${FOUND_DELTA[0]} | cut -d" " -f1)
+    DELTA_FIELDS=$(jq 'keys' $DELTA_TEMPLATE_FILE | sed '1d;$d;s/,$//;s/^ *//g;s/^.//g;s/.$//g' | tr '\n' ',' | sed 's/,$//')
+    DELTA_FILTERS=$(echo $DELTA_FIELDS | sed 's/^/[./g;s/$/] | @csv/g;s/,/,./g')
 
     # check if the CSV output file is unset
     if [ -z "$CSV_OUTPUT_FILE" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the CSV output file for aggregate values."
-        echo -e "[$YELLOW""WARN "$BLANK"] set it to $YELLOW./delta.csv$BLANK"
+        echo -e "[$YELLOW""WARN "$BLANK"] set it to $YELLOW$(pwd)/delta.csv$BLANK"
         CSV_OUTPUT_FILE="$(pwd)/delta.csv"
     else
         # check if the CSV output file is absolute path
@@ -352,7 +437,8 @@ function csv()
             *) CSV_OUTPUT_FILE="$(pwd)/${CSV_OUTPUT_FILE}" ;;
         esac
     fi
-    
+
+<< 'PROCESS_OUTPUT_FILE_ENABLE' 
     # check if the CSV output file is unset
     if [ -z "$PROC_OUTPUT_FILE" ]
     then
@@ -367,6 +453,7 @@ function csv()
             *) PROC_OUTPUT_FILE="$(pwd)/${PROC_OUTPUT_FILE}" ;;
         esac
     fi
+PROCESS_OUTPUT_FILE_ENABLE
 
     # check if the CSV output file is existed and overwrite flag is on
     if [ ! -z "$DO_OVERWRITE" ] && [ -f "$CSV_OUTPUT_FILE" ]
@@ -384,35 +471,34 @@ function csv()
         rm -f $PROC_OUTPUT_FILE
     fi
 
-    # set up fields
-    CSV_FIELDS="Container_Write_Time","Process_Write_Time","VM_Write_Time","cCpuTime","cCpuTimeKernelMode","cCpuTimeUserMode","cDiskReadBytes","cDiskSectorIO","cDiskWriteBytes","cId","cMajorPGFault","cMemoryMaxUsed","cMemoryUsed","cNetworkBytesRecvd","cNetworkBytesSent","cNumProcesses","cNumProcessors","cPGFault","currentTime","pMetricType","vBootTime","vCpuContextSwitches","vCpuIdleTime","vCpuMhz","vCpuNice","vCpuSteal","vCpuTime","vCpuTimeIOWait","vCpuTimeIntSrvc","vCpuTimeKernelMode","vCpuTimeSoftIntSrvc","vCpuTimeUserMode","vCpuType","vDiskMergedReads","vDiskMergedWrites","vDiskReadTime","vDiskSectorReads","vDiskSectorWrites","vDiskSuccessfulReads","vDiskSuccessfulWrites","vDiskWriteTime","vId","vKernelInfo","vLoadAvg","vMajorPageFault","vMemoryBuffers","vMemoryCached","vMemoryFree","vMemoryTotal","vMetricType","vNetworkBytesRecvd","vNetworkBytesSent","vPgFault"
-    PROC_FIELDS="pId,pCmdline,pName,pNumThreads,pCpuTimeUserMode,pCpuTimeKernelMode,pChildrenUserMode,pChildrenKernelMode,pVoluntaryContextSwitches,pInvoluntaryContextSwitches,pBlockIODelays,pVirtualMemoryBytes"
-
     # write headers to CSV output file
-    echo "$CSV_FIELDS" > $CSV_OUTPUT_FILE
-    echo "$PROC_FIELDS" >> $PROC_OUTPUT_FILE
+    echo "$STATIC_FIELDS$DELTA_FIELDS" > $CSV_OUTPUT_FILE
+    
+    #echo "$PROC_FIELDS" >> $PROC_OUTPUT_FILE
 
     # print out arguments
-    echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$AGGREGATE_INPUT_DIR$BLANK"
+    echo -e "[$GREEN""INFO "$BLANK"] the input directory of the profiling: $GREEN$DELTA_INPUT_DIR$BLANK"
     echo -e "[$GREEN""INFO "$BLANK"] the CSV output file of the profiling: $GREEN$CSV_OUTPUT_FILE$BLANK"
 
-    AGGREGATE_FILES=$(find $AGGREGATE_INPUT_DIR -name "delta_????_??_??_??_??_??.json" | sort)
-    for AGGREGATE_FILE in $AGGREGATE_FILES
+    DELTA_FILES=$(find $DELTA_INPUT_DIR -name "delta_????_??_??_??_??_??.json" | sort)
+    for DELTA_FILE in $DELTA_FILES
     do
-        jq -r '[.Container_Write_Time,.Process_Write_Time,.VM_Write_Time,.cCpuTime,.cCpuTimeKernelMode,.cCpuTimeUserMode,.cDiskReadBytes,.cDiskSectorIO,.cDiskWriteBytes,.cId,.cMajorPGFault,.cMemoryMaxUsed,.cMemoryUsed,.cNetworkBytesRecvd,.cNetworkBytesSent,.cNumProcesses,.cNumProcessors,.cPGFault,.currentTime,.pMetricType,.vBootTime,.vCpuContextSwitches,.vCpuIdleTime,.vCpuMhz,.vCpuNice,.vCpuSteal,.vCpuTime,.vCpuTimeIOWait,.vCpuTimeIntSrvc,.vCpuTimeKernelMode,.vCpuTimeSoftIntSrvc,.vCpuTimeUserMode,.vCpuType,.vDiskMergedReads,.vDiskMergedWrites,.vDiskReadTime,.vDiskSectorReads,.vDiskSectorWrites,.vDiskSuccessfulReads,.vDiskSuccessfulWrites,.vDiskWriteTime,.vId,.vKernelInfo,.vLoadAvg,.vMajorPageFault,.vMemoryBuffers,.vMemoryCached,.vMemoryFree,.vMemoryTotal,.vMetricType,.vNetworkBytesRecvd,.vNetworkBytesSent,.vPgFault] | @csv' $AGGREGATE_FILE >> $CSV_OUTPUT_FILE
-    
-        pId=$(jq -r ".pProcesses[].pId" $AGGREGATE_FILE)
-        pCmdline=$(jq -r ".pProcesses[].pCmdline" $AGGREGATE_FILE)
-        pName=$(jq -r ".pProcesses[].pName" $AGGREGATE_FILE)
-        pNumThreads=$(jq -r ".pProcesses[].pNumThreads" $AGGREGATE_FILE)
-        pCpuTimeUserMode=$(jq -r ".pProcesses[].pCpuTimeUserMode" $AGGREGATE_FILE)
-        pCpuTimeKernelMode=$(jq -r ".pProcesses[].pCpuTimeKernelMode" $AGGREGATE_FILE)
-        pChildrenUserMode=$(jq -r ".pProcesses[].pChildrenUserMode" $AGGREGATE_FILE)
-        pChildrenKernelMode=$(jq -r ".pProcesses[].pChildrenKernelMode" $AGGREGATE_FILE)
-        pVoluntaryContextSwitches=$(jq -r ".pProcesses[].pVoluntaryContextSwitches" $AGGREGATE_FILE)
-        pInvoluntaryContextSwitches=$(jq -r ".pProcesses[].pInvoluntaryContextSwitches" $AGGREGATE_FILE)
-        pBlockIODelays=$(jq -r ".pProcesses[].pBlockIODelays" $AGGREGATE_FILE)
-        pVirtualMemoryBytes=$(jq -r ".pProcesses[].pVirtualMemoryBytes" $AGGREGATE_FILE)
+        printf "$STATIC_VALUES" >> $CSV_OUTPUT_FILE
+        jq -r "$DELTA_FILTERS" $DELTA_FILE >> $CSV_OUTPUT_FILE
+
+<< 'PROCESS_OUTPUT_FILE_ENABLE'
+        pId=$(jq -r ".pProcesses[].pId" $DELTA_FILE)
+        pCmdline=$(jq -r ".pProcesses[].pCmdline" $DELTA_FILE)
+        pName=$(jq -r ".pProcesses[].pName" $DELTA_FILE)
+        pNumThreads=$(jq -r ".pProcesses[].pNumThreads" $DELTA_FILE)
+        pCpuTimeUserMode=$(jq -r ".pProcesses[].pCpuTimeUserMode" $DELTA_FILE)
+        pCpuTimeKernelMode=$(jq -r ".pProcesses[].pCpuTimeKernelMode" $DELTA_FILE)
+        pChildrenUserMode=$(jq -r ".pProcesses[].pChildrenUserMode" $DELTA_FILE)
+        pChildrenKernelMode=$(jq -r ".pProcesses[].pChildrenKernelMode" $DELTA_FILE)
+        pVoluntaryContextSwitches=$(jq -r ".pProcesses[].pVoluntaryContextSwitches" $DELTA_FILE)
+        pInvoluntaryContextSwitches=$(jq -r ".pProcesses[].pInvoluntaryContextSwitches" $DELTA_FILE)
+        pBlockIODelays=$(jq -r ".pProcesses[].pBlockIODelays" $DELTA_FILE)
+        pVirtualMemoryBytes=$(jq -r ".pProcesses[].pVirtualMemoryBytes" $DELTA_FILE)
 
         IFS=$'\n' read -rd '' -a pId <<< "$pId"
         IFS=$'\n' read -rd '' -a pCmdline <<< "$pCmdline"
@@ -432,10 +518,14 @@ function csv()
         do
             echo "${pId[$index]},${pCmdline[$index]},${pName[$index]},${pNumThreads[$index]},${pCpuTimeUserMode[$index]},${pCpuTimeKernelMode[$index]},${pChildrenUserMode[$index]},${pChildrenKernelMode[$index]},${pVoluntaryContextSwitches[$index]},${pInvoluntaryContextSwitches[$index]},${pBlockIODelays[$index]},${pVirtualMemoryBytes[$index]}" >> $PROC_OUTPUT_FILE
         done
+PROCESS_OUTPUT_FILE_ENABLE
     done
 
+<< 'PROCESS_OUTPUT_FILE_ENABLE'
     # sort the process CSV output file (first column and ignore the others)
     sort -sk1,1n -o $PROC_OUTPUT_FILE $PROC_OUTPUT_FILE
+PROCESS_OUTPUT_FILE_ENABLE
+    echo "passed" > status.log
 }
 
 function graph()
@@ -492,7 +582,7 @@ function graph()
     if [ -z "$METRIC_INPUT_FILE" ]
     then
         echo -e "[$YELLOW""WARN "$BLANK"] did not specify the CSV input file and will generate graphs for all metrics"
-        METRIC_INPUT_FILE="./default.cfg"
+        METRIC_INPUT_FILE="./graph.default.cfg"
     else
         # check if the metric file is absolute path
         case $METRIC_INPUT_FILE in
@@ -506,7 +596,7 @@ function graph()
         then
             echo -e "[$YELLOW""WARN "$BLANK"] could not find the metric input file $YELLOW$METRIC_INPUT_FILE$BLANK"
             echo -e "[$YELLOW""WARN "$BLANK"] will generate graphs for all metrics"
-            METRIC_INPUT_FILE="$(pwd)/default.cfg"
+            METRIC_INPUT_FILE="$(pwd)/graph.default.cfg"
         fi
     fi
 

@@ -5,7 +5,6 @@ Created on Aug 25, 2021
 
 import sys
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 #import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
@@ -13,11 +12,13 @@ from pandas.api.types import is_string_dtype
 from pandas.api.types import is_numeric_dtype
 
 config = dict()
-config['report_file'] = 'deltas.csv'
+config['report_file'] = 'delta.csv'
 
-def plot_single(report_file, image_dir, fields = None):
+def plot_single(report_file, group, key, image_dir):
     df = pd.read_csv(report_file)
     df['TimeSteps'] = np.arange(0, len(df))
+    unit = group["unit"]
+    fields = group["metrics"]
     
     for field in fields:
         metric = field[:-1]
@@ -40,12 +41,16 @@ def plot_single(report_file, image_dir, fields = None):
             ax.xaxis.tick_bottom()
             ax.yaxis.tick_left()
 
+            # print(metric)
+            min_val = df[metric].min()
+            max_val = df[metric].max()
             ax.set_xlim(xmin=0, xmax=len(df)-1)
-            ax.set_ylim(ymin=df[metric].min(), ymax=df[metric].max())
+            if min_val != max_val:
+                ax.set_ylim(ymin=df[metric].min(), ymax=df[metric].max())
 
             plt.title(metric)
-            plt.ylabel('Runtime (in centiseconds)')
-            plt.xlabel('Time Steps (in seconds)')
+            plt.ylabel(unit)
+            plt.xlabel('Time Steps')
         
             # linestyle = '-', '--', '-.', ':', 'None', ' ', '', 'solid', 'dashed', 'dashdot', 'dotted'
             plt.grid(color = 'white', linestyle = 'solid', linewidth = 1)
@@ -54,9 +59,11 @@ def plot_single(report_file, image_dir, fields = None):
             plt.clf()
 
 # plot the graph from the report file
-def plot_multiple(report_file, image_dir = None, fields = None):
+def plot_multiple(report_file, group, key, idx, image_dir = None, fields = None):
     df = pd.read_csv(report_file)
     df['TimeSteps'] = np.arange(0, len(df))
+    unit = group["unit"]
+    fields = group["metrics"]
     
     if fields is None:
         fields = df.columns
@@ -99,13 +106,10 @@ def plot_multiple(report_file, image_dir = None, fields = None):
     
     #plt.ylabel(y_axis)
 
-    if len(fields) > 1:
-        plt.legend()
-        plt.title('Container Profiler')
-    else:
-        plt.title(fields[0])
-    plt.ylabel('Runtime (in centiseconds)')
-    plt.xlabel('Time Steps (in seconds)')
+    plt.legend()
+    plt.title(key)
+    plt.ylabel(unit)
+    plt.xlabel('Time Steps')
 
     ax.set_xlim(xmin=0, xmax=len(df)-1)
     ax.set_ylim(ymin=lower_bound, ymax=upper_bound)
@@ -115,16 +119,16 @@ def plot_multiple(report_file, image_dir = None, fields = None):
     plt.grid(True)
     
     if image_dir is not None:
-        plt.savefig('{}/{}'.format(image_dir, "profiler.png"), bbox_inches='tight', dpi=100, transparent=False)
+        plt.savefig('{}/{}'.format(image_dir, "profiler_{}.png".format(idx)), bbox_inches='tight', dpi=100, transparent=False)
     else:
         plt.show()
     plt.clf()
 
 if __name__ == '__main__':
     
-    delta_file = "deltas.csv"
-    config_file = "graph.ini"
-    image_dir = "test/"
+    delta_file = "./delta.csv"
+    config_file = "./graph.default.cfg"
+    image_dir = "./"
 
     is_single_plot = None
     count = len(sys.argv)
@@ -137,11 +141,32 @@ if __name__ == '__main__':
     if count > 4:
         is_single_plot = sys.argv[4]
 
-    file = open(config_file, "r")
-    metrics = [metric for metric in file.readlines()]
-    
+    group_name = "Unknown"
+    metric_groups = {}
+    metric_groups[group_name] = {}
+    metric_groups[group_name]["unit"] = "Unspecified"
+    metric_groups[group_name]["metrics"] = []
+    with open(config_file, 'r') as infile:
+        for line in infile:
+            if line.startswith("###"):
+                data = line[3:-1].split(",")
+                group_name = data[0]
+                metric_groups[group_name] = {}
+                if len(data) > 1:
+                    metric_groups[group_name]["unit"] = data[1]
+                else:
+                    metric_groups[group_name]["unit"] = "Unspecified"
+                metric_groups[group_name]["metrics"] = []
+            elif line.startswith("#"):
+                continue
+            else:
+                metric_groups[group_name]["metrics"].append(line)
+    metric_groups.pop("Unknown", None)
+
     if is_single_plot is not None:
-        plot_single(delta_file, image_dir, fields = metrics)
+        for key in metric_groups.keys():
+            plot_single(delta_file, metric_groups[key], key, image_dir)
     else:
-        plot_multiple(delta_file, image_dir, fields = metrics)
+        for idx, key in enumerate(metric_groups.keys()):
+            plot_multiple(delta_file, metric_groups[key], key, idx, image_dir)
 

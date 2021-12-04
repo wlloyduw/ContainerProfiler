@@ -10,5 +10,4 @@ RUN apt-get update \
     && apt-get remove -y git automake autoconf autoconf-archive pkg-config zlib1g-dev libbz2-dev cmake gcc build-essential \
     && apt-get autoclean -y && apt-get autoremove -y --purge && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk* \
     && rm -rf /root/kallisto*
-RUN sed -i 's/COMMAND/kallisto/g' entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["kallisto"]

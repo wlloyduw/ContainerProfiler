@@ -55,8 +55,8 @@ def getContainerInfo():
 
     # need to find a different 
     cDiskSectorIO=0
-    if path.exists('/sys/fs/cgroup/blkio/blkio.sectors'):
-        cDiskSectorIOFile=open('/sys/fs/cgroup/blkio/blkio.sectors', "r")
+    if path.exists('/sys/fs/cgroup/blkio/blkio.sectors'): # TODO should print an error message if the file is not existed
+        cDiskSectorIOFile=open('/sys/fs/cgroup/blkio/blkio.sectors', "r") # TODO should print an error message if the file is empty
         if len(cDiskSectorIOFile.readlines()) > 0:
             cDiskSectorIOFileArr = re.findall(r'cpu.*', cDiskSectorIOFile)[0].split()
             cDiskSectorIO=sum(cDiskSectorIOFileArr)
@@ -83,7 +83,7 @@ def getContainerInfo():
             for major_minor in major_minor_arr:
                 if (temp_arr[0] == major_minor):
                     cDiskReadBytes += int(temp_arr[2])
-    except:
+    except: # TODO print error message (CHECK THE OTHER TRY-CATCH)
         pass
 
     try:

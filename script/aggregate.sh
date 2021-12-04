@@ -23,7 +23,6 @@ then
 fi
 
 AGG_CONFIG=aggregate.cfg
-DEBUG_FILE=debug.log
 if [ ! -z "$3" ] && [ -f "$3" ]
 then
     AGG_CONFIG="$3"
@@ -54,7 +53,6 @@ function print_aggregations
         do
             
             local DATA_TYPE=$(jq -r $CURRENT_PATH.$KEY'|type' "$1" <<< '""')
-            echo "$CURRENT_PATH.$KEY => $DATA_TYPE" >> $DEBUG_FILE
             case $DATA_TYPE in
 
                 "object")
@@ -125,7 +123,6 @@ function print_aggregations
 
 # ./delta.sh 2021_11_05_20_45_39.json 2021_11_05_20_45_44.json
 # ./delta.sh test1.json test2.json
-echo "" > $DEBUG_FILE
 printf "{"
 sed 's/\$/_/g' "$1" > temp1.json
 sed 's/\$/_/g' "$2" > temp2.json
