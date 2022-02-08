@@ -164,3 +164,60 @@ sudo docker run --rm \
 	-v ${PWD}:/data \
 	 profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
 ```
+
+## Delta: a tool is to compute the delta statistics of resource utilization between time instances
+
+After receiving profiling files from the previous step, we run the delta option to generate delta statistics in JSON format.
+
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-i | --input-directory | No | specify the input directory for calculating aggregate values in JSON format
+-o | --output-directory | No | specify the output directory for calculating aggregate values in JSON format
+-a | --aggregate-config-file | Yes | specify the aggregate configuration file
+-c | --clean-up | Yes | clean up the aggregate files from the previous run
+
+```bash
+sudo docker run --rm \
+	-e TOOL=delta \
+	-e TOOL_ARGUMENTS="-i /data -o /data" \
+	-v ${PWD}:/data \
+	 profiler:sysbench
+```
+
+## CSV generator: a tool is to generate the statistics of resource utilization in JSON format
+
+We need to specify the directory that holds statistic files. Those files are generated from the delta tool.
+
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-i | --input-directory | No | specify the input directory of aggregate files
+-o | --csv-output-file | No | specify the output file for CSV file generation
+-w | --overwrite | Yes | overwrite the CSV file from the previous run
+
+```bash
+sudo docker run --rm \
+	-e TOOL=csv \
+	-e TOOL_ARGUMENTS="-i /data -o /data/delta.csv" \
+	-v ${PWD}:/data \
+	 profiler:sysbench
+```
+
+## Graph: a tool is to make graph based on the statistic CSV file
+
+The tool generate the graphs based on the statistic file in CSV format. Also, we can provide the metric configuration file for the graphs.
+
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-r | --csv-input-file | No | specify the aggregate CSV file
+-m | --metric-input-file | Yes | specify the metric file specifying metrics for graphing
+-g | --graph-output-directory | No | specify the output directory for graph images
+-s | --single-plot | Yes | plot single curve on a graph
+
+
+```bash
+sudo docker run --rm \
+	-e TOOL=graph \
+	-e TOOL_ARGUMENTS="-i /data -o /data" \
+	-v ${PWD}:/data \
+	 profiler:sysbench
+```
