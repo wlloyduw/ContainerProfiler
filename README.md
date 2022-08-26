@@ -40,9 +40,8 @@ University of Washington Tacoma
 
 1\. Install the Container Profiler
 
-2\. Set up the Container Profiler scripts to use your Container by editing the processpack.sh script and the runDockerProfiler.sh.
+2\. There are some are some [use cases](docs/build.md) provided for Container Profiler
 
-3\. Start the Profiler by running the runDockerProfile.sh script.
 ## Miscellaneous
 ### How should I reference the Container Profiler if I use it?
 
@@ -60,32 +59,11 @@ ContainerProfiler includes bash scripts **rudataall.sh** to profile the resource
 
 **Authors:** Wes Lloyd & Huazeng Deng & Ling-hong Hung
 
-**Version:**   0.2
+**Version:**   0.3
 
 **GitHub:**    https://github.com/wlloyduw/ContainerProfiler
 
 **License:**   Copyright.
-
-
-
-
-## Function Reference
-======
-
-**deltav2**.sh calculates the delta from 2 json files produced by **rudataall.sh**
-
-It writes the deltas to stdout in json format and the missing fields to stderr
-
-#### Delta Script Usage:
-```bash
-deltav2.sh file1.json file2.json 2>missing.txt 1>delta.json
-```
-Test file and scripts are found in testFiles
-
-#### Description
-Basically it loops through file1 to find key : numeric_value pairs and store them in an associative array. It then loops through file2 to print out the json elements and calculate deltas. Missing values in file1 are printed here and a second key numericValue associative array is mad. A third loop then searches through the first associative array to fine missing values in file2. 
-
-As long as there is no more than one key : value pair per line in the json files and the key is unique (i.e. doesn't depend on the structure of the higher order json objects), the script should work fine. It is tolerant of order permutations, new or different fields, and missing lines but depends on file2 being valid json.
 
 ## Metrics Description 
 =======
