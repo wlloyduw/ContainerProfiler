@@ -40,7 +40,7 @@ University of Washington Tacoma
 
 1\. Install the Container Profiler
 
-2\. There are some are some [use cases](docs/build.md) provided for Container Profiler
+2\. Here the common [use cases](docs/build.md) for applying the Container Profiler to profile a continer 
 
 ## Miscellaneous
 ### How should I reference the Container Profiler if I use it?
