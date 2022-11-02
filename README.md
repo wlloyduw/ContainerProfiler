@@ -111,10 +111,6 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
 | vId | VM ID (default is "unavailable") |
 | currentTime | Number of seconds (s) that have elapsed since January 1, 1970 (midnight UTC/GMT) |
 
-
-      
-          
-          
 ## Container Level Metrics
 ----------------
 
@@ -134,9 +130,6 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
 | cNetworkBytesRecvd | The number of bytes each interface has received |
 | cNetworkBytesSent | The number of bytes each interface has sent |
 | cId | Container ID |
-
-
-##
 
 ## Process Level Metrics
 ----------------
@@ -158,7 +151,7 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
 
        
 
-## Tutorial: Profiling a Container
+## Tutorial: Profiling a Container (TODO Need to link to Youtube channel)
 
 ## Video Demonstration
 **Video:**     https://youtu.be/X-_7zqeyffk
@@ -167,67 +160,222 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
 git clone https://github.com/wlloyduw/ContainerProfiler
 ```
 
-## Preparing the Container Profiler - Method 1
-Navigate to /ContainerProfile/profiler_demo/sleep_test
+# How do I build the ContainerProfiler to profile the total resource utilization
 
-![](./profiler_demo/sleep_test/Tutorial_1_pics/tutorial_method1_1.png)
+```bash
+sudo ./build.sh
+```
 
-Open "Dockerfile"
+## 1. How do I profile a task or application
 
-![](./profiler_demo/sleep_test/Tutorial_1_pics/tutorial_method1_2.png)
+```bash
+sudo docker run --rm -v ${PWD}:/OUTPUT_DIR  profiler:custom profile -o /OUTPUT_DIR SET_OF_TASKS
+```
 
-  1) This file determines how your container is built and with what packages. Make sure you keep the first run line ("RUN apt-get install update -y"), but remove/add any other packages you may need. For this tutorial, leave this file unedited.
+For example:
 
-Now that the dockerfile is set up, you can build the container with the command "sudo docker build -t 'container-name' ." (Can replace container-name with any name). To confirm the creation of the container, typing sudo docker images into the console will let you see if the container has been created.
+```bash
+sudo docker run --rm -v ${PWD}:/data  profiler:custom profile -o /data "sleep 5; ls -al"
+```
 
-![](./profiler_demo/sleep_test/Tutorial_1_pics/tutorial_method1_3.png)
- 
-Open "runDockerProfile.sh". The line starting with "DOCKERCMD=" is doing a lot of stuff.  It is building the command that will start the docker container and mounts the directory on the host machine that is running the tool to the data directory in the container.  This is necessary in order to get the json ouput files containing all your metrics onto your host machine.  Otherwise they would go away when the container dies.
+OUTPUT_DIR: the directory that holds profiling files in JSON format
 
-![](./profiler_demo/sleep_test/Tutorial_1_pics/tutorial_method1_5.png)
+## 2. How do I perform time series profiling of a task or application
 
-There are two empty variables in this file that need to be set. One is the container name, and the other is your host path. The container name needs to be the name of the container you are running, and the host path is the path to where the tool is running (Can use "pwd" in terminal to confirm the directory is correct).
+The idea is to add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
 
-![](./profiler_demo/sleep_test/Tutorial_1_pics/tutorial_method1_6.png)
+```bash
+sudo docker run --rm
+    -v ${PWD}:/OUTPUT_DIR
+    profiler:custom profile -t TIME_INTERVAL -o /OUTPUT_DIR SET_OF_TASKS
+```
 
-Open "process_pack.sh".  This file contains the bash commands that will be executed in the container.  It contains the commands for sysbench and stress-ng by default.  Delete them and enter your own commands for the job you'd like to profile. For this tutorial, you should leave this file unedited.
+For example:
 
-![](./profiler_demo/sleep_test/Tutorial_1_pics/tutorial_method1_7.png)
+```bash
+sudo docker run --rm -v ${PWD}:/data  profiler:custom profile -t 1 -o /data "sleep 5; ls -al"
+```
+
+# How do I build a new container that integrates the ContainerProfiler into on an existing container
+
+You will need access to the Dockerfile used to build your container.
+The idea is that your container will already be configured to run a specified task or application, and 
+we simply want to integrate the container profiler so it is easy to profile.
+The idea is to point to the folder containing your Dockerfile and any other dependencies.
+
+```bash
+sudo ./build.sh -d DOCKER_FILE_PATH
+```
+
+For example:
+
+```bash
+sudo ./build.sh -d docker/sysbench.docker
+```
+
+## 3. How do I profile my container once I've integrated the ContainerProfiler 
+
+```bash
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-o /data" \
+    -v ${PWD}:/data \
+    profiler:CONTAINER_TAG YOUR_ARUMENTS_GO_HERE
+```
+
+For example:
+
+```bash
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-o /data" \
+    -v ${PWD}:/data \
+    profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
+```
+
+## 4. How do I perform time series sampling on my container once I've integrated the ContainerProfiler
+
+The idea is to add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
+
+```bash
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-t TIME_INTERVAL -o /data" \
+    -v ${PWD}:/data \
+    profiler:CONTAINER_TAG YOUR_ARUMENTS_GO_HERE
+```
+
+For example:
+
+```bash
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-t 1 -o /data" \
+    -v ${PWD}:/data \
+    profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
+```
+
+# How do I build a container that integrates the ContainerProfiler to profile software where I provide an installation script
+
+Here the installation script should install all software dependencies required to run the application.
+It is not necessary to preface installation commands with 'sudo'.
+
+```bash
+sudo ./build.sh -i INSTALL_SCRIPT_PATH
+```
+
+For example:
+
+```bash
+sudo ./build.sh -i docker/install.sh
+```
+
+You will be asked to enter an entry point based on the software you attempt to install in your install script.
+The entry point is the name of the command (without any arguments) that will be run.
+For example, if the installation script installs sysbench, then the name of the command will be 'sysbench'.
+Later, when running the container you do not need to specify the command again, but just the arguments that are to be passed to the command.
+
+## 5. How do I profile a task or application installed using the installation script
+
+After the container name 'profiler:sysbench' you will need to specify the command line arguments
+for the application being profiled.
+
+```bash
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-o /data" \
+    -v ${PWD}:/data \
+    profiler:CONTAINER_TAG YOUR_ARUMENTS_GO_HERE
+```
+
+For example:
+
+```bash
+sudo docker run --rm \
+	-e TOOL=profile \
+	-e TOOL_ARGUMENTS="-o /data" \
+	-v ${PWD}:/data \
+	 profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
+```
+
+## 6. How do I perform time series sampling of the task or application installed using the installation script
+
+After the container name 'profiler:sysbench' you will need to specify the command line arguments
+for the application being profiled.
+
+In addition, add the '-t' argument to specify a time series sampling interval.  (e.g. '-t 1' for 1-second sampling)
+
+```bash
+sudo docker run --rm \
+    -e TOOL=profile \
+    -e TOOL_ARGUMENTS="-t TIME_INTERVAL -o /data" \
+    -v ${PWD}:/data \
+    profiler:CONTAINER_TAG YOUR_ARUMENTS_GO_HERE
+```
+
+For example:
+
+```bash
+sudo docker run --rm \
+	-e TOOL=profile \
+	-e TOOL_ARGUMENTS="-t 1 -o /data" \
+	-v ${PWD}:/data \
+	 profiler:sysbench --test=cpu --cpu-max-prime=20000 --max-requests=4000 run
+```
+
+## Delta: a tool is to compute the delta statistics of resource utilization between time instances
+
+After receiving profiling files from the previous step, we run the delta option to generate delta statistics in JSON format.
+
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-i | --input-directory | No | specify the input directory for calculating aggregate values in JSON format
+-o | --output-directory | No | specify the output directory for calculating aggregate values in JSON format
+-a | --aggregate-config-file | Yes | specify the aggregate configuration file
+-c | --clean-up | Yes | clean up the aggregate files from the previous run
+
+```bash
+sudo docker run --rm \
+	-e TOOL=delta \
+	-e TOOL_ARGUMENTS="-i /data -o /data" \
+	-v ${PWD}:/data \
+	 profiler:sysbench
+```
+
+## CSV generator: a tool is to generate the statistics of resource utilization in JSON format
+
+We need to specify the directory that holds statistic files. Those files are generated from the delta tool.
+
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-i | --input-directory | No | specify the input directory of aggregate files
+-o | --csv-output-file | No | specify the output file for CSV file generation
+-w | --overwrite | Yes | overwrite the CSV file from the previous run
+
+```bash
+sudo docker run --rm \
+	-e TOOL=csv \
+	-e TOOL_ARGUMENTS="-i /data -o /data/delta.csv" \
+	-v ${PWD}:/data \
+	 profiler:sysbench
+```
+
+## Graph: a tool is to make graph based on the statistic CSV file
+
+The tool generate the graphs based on the statistic file in CSV format. Also, we can provide the metric configuration file for the graphs.
+
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-r | --csv-input-file | No | specify the aggregate CSV file
+-m | --metric-input-file | Yes | specify the metric file specifying metrics for graphing
+-g | --graph-output-directory | No | specify the output directory for graph images
+-s | --single-plot | Yes | plot single curve on a graph
 
 
-
-## Preparing the Container Profiler - Method 2
-An alternate method to using the container profiler by downloading the alpine/ubuntu containerized version.
-
-To build
-
-docker build -t biodepot/profiler:alpine_3.7 .
-To use the alpine container
-
-docker run --rm  -it -v $PWD:/.cprofiles  biodepot/profiler:alpine_3.7 sleep 10
-If you leave out the volume mapping
-
--v <host_dir>:/.cprofiles
-then no profiling will take place. Otherwise the json files will appear in <host_dir>
-
-The delta is set to 1 second by default. This can be changed by changing the DELTA environment variable i.e.
-
-The following command collects data every 2 seconds
-
-docker run --rm  -it -v $PWD:/.cprofiles -e DELTA=2 biodepot/profiler:alpine_3.7 sleep 10
-Finally, internally the json files are stored in the /.cprofiles directory. This can be changed using the OUTPUTDIR environment variable i.e. to have the json files written internally to /var/profiles:
-
-docker run --rm  -it -v $PWD:/var/profiles -e OUTPUTDIR='/var/profiles' biodepot/profiler:alpine_3.7 sleep 10
-This option is included on the off-chance that the default /.cprofiles is in use for something else.
-
-
-
-## Graph Visualizations
-
-The container profiler offers scripts that can be used to graph JSON output from the container profiler.
-
-The guide to using the graphing scripts can be found here: [link to Graphing scripts!](https://github.com/wlloyduw/ContainerProfiler/tree/david/profiler_demo/sleep_test/Graphing)
-
-
-## JSON to CSV
-In addition to graphing scripts, we also provide a script to convert JSON data to CSV files. Each JSON file correspond to a row in a CSV file, and the column data will be the resource utilization metrics. The JSONtoCSV script can be found here:
+```bash
+sudo docker run --rm \
+	-e TOOL=graph \
+	-e TOOL_ARGUMENTS="-i /data -o /data" \
+	-v ${PWD}:/data \
+	 profiler:sysbench
+```
