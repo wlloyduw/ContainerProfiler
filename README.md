@@ -57,11 +57,13 @@ In order to use the Container Profiler, a container with an application/workflow
 
 ContainerProfiler includes bash scripts **rudataall.sh** to profile the resource utilization on VM level, container level and process level and **deltav2.sh** to compute the delta statistics of resource utilization between two time instances. Detailed usage of the profiler script can be found in the YouTube video linked below (demo scripts can be found in profiler_demo directory).
 
-**Authors:** Wes Lloyd & Huazeng Deng & Ling-hong Hung
+**Authors:** Wes Lloyd & Huazeng Deng & Ling-hong Hung & Varik Hoang
 
 **Version:**   0.3
 
 **GitHub:**    https://github.com/wlloyduw/ContainerProfiler
+
+**Preprint:**  https://arxiv.org/abs/2005.11491
 
 **License:**   Copyright.
 
@@ -154,7 +156,7 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
 ## Tutorial: Profiling a Container (TODO Need to link to Youtube channel)
 
 ## Video Demonstration
-**Video:**     https://youtu.be/X-_7zqeyffk
+**Video:**     https://www.youtube.com/@containerprofiler6371 
 ## Install the Container Profiler
 ```bash
 git clone https://github.com/wlloyduw/ContainerProfiler
