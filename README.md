@@ -153,10 +153,17 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
 
        
 
-## Tutorial: Profiling a Container (TODO Need to link to Youtube channel)
+## Tutorial: Profiling a Container
 
 ## Video Demonstration
-**Video:**     https://www.youtube.com/@containerprofiler6371 
+**Video Channel:**     https://www.youtube.com/@containerprofiler6371 
+
+1. Getting Started with the Container Profiler tool - [Part 1](https://www.youtube.com/watch?v=KK6kKfMkKuc) & [Part 2](https://www.youtube.com/watch?v=Tj3Zyje0DjY)
+2. Profiling a bash script with the Container Profiler - [Link](https://www.youtube.com/watch?v=mGZkmXWJAGw)
+3. Profiling applications with the Container Profiler using the install script - [Link](https://www.youtube.com/watch?v=L0qrtodC4j0)
+4. Graphing Resource Utilization with the Container Profiler tool - [Link](https://www.youtube.com/watch?v=PFkETPfZI9g)
+5. Profiling and graphing resource utilization of pgbench, the postgresql database benchmark - [Link](https://www.youtube.com/watch?v=cI8D4JRuyjw)
+
 ## Install the Container Profiler
 ```bash
 git clone https://github.com/wlloyduw/ContainerProfiler
