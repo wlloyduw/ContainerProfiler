@@ -65,7 +65,7 @@ ContainerProfiler includes bash scripts **rudataall.sh** to profile the resource
 
 **Preprint:**  https://arxiv.org/abs/2005.11491
 
-**Prerequisite:** Linux host operating system recommended
+**Prerequisite:** Linux host operating system (recommended)
 
 ## Metrics Description 
 =======
