@@ -175,6 +175,8 @@ git clone https://github.com/wlloyduw/ContainerProfiler
 
 # How do I build the ContainerProfiler to profile the total resource utilization
 
+Building the ContainerProfiler should be completed using a Linux environment where Docker has been preinstalled.
+
 ```bash
 sudo ./build.sh
 ```
