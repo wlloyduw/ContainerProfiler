@@ -49,7 +49,7 @@ University of Washington Tacoma
 ## GENERAL INFORMATION
 The Container Profiler can be used as a tool to profile an application or workflow by taking interval snapshots of a collection of linux resource utilization metrics throughout the course of the job. These snapshots are then stored as JSON data which can then be used to see how the metrics changed once the job is finished.
 
-In order to use the Container Profiler, a container with an application/workflow/script to be run and profiled is needed.
+In order to use the Container Profiler, a container with an application/workflow/script to be run and profiled is needed.  Use of Linux as the Docker host operating system is recommended.
 ### Overview: Running the Container Profiler
 
 
@@ -64,6 +64,8 @@ ContainerProfiler includes bash scripts **rudataall.sh** to profile the resource
 **GitHub:**    https://github.com/wlloyduw/ContainerProfiler
 
 **Preprint:**  https://arxiv.org/abs/2005.11491
+
+**Prerequisite:** Linux host operating system recommended
 
 ## Metrics Description 
 =======
@@ -152,6 +154,10 @@ https://github.com/wlloyduw/ContainerProfiler/blob/master/metrics_description_fo
        
 
 ## Tutorial: Profiling a Container
+
+## Prerequisites
+
+The Container Profiler has been designed to operating where Linux is the host operating system. The tool may be operable on other platforms besides Linux but has not been tested.  For best results, use of a Linux host operating system is recommended.
 
 ## Video Demonstration
 **Video Channel:**     https://www.youtube.com/@containerprofiler6371 
