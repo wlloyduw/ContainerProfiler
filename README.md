@@ -434,13 +434,15 @@ All output files will go under local data directory.
 mkdir data
 
 # profile sysbench
-sudo docker run --rm -e TOOL=profile -e TOOL_ARGUMENTS="-o /data" -v ${PWD}/data:/data profiler:sysbench 'sysbench --test=cpu --cpu-max-prime=2000000 --num-threads=2 --max-requests=10 run'
+sudo docker run --rm -e TOOL=profile -e TOOL_ARGUMENTS="-o /data" -v ${PWD}/data:/data profiler:sysbench \
+'sysbench --test=cpu --cpu-max-prime=2000000 --num-threads=2 --max-requests=10 run'
 
 # calculate delta values
 sudo docker run --rm -e TOOL=delta -e TOOL_ARGUMENTS="-i /data -o /data" -v ${PWD}/data:/data profiler:sysbench
 
 # create csv output
-sudo docker run --rm -e TOOL=csv -e TOOL_ARGUMENTS="-w -i /data -o /data/output.csv" -v ${PWD}/data:/data profiler:sysbench
+sudo docker run --rm -e TOOL=csv -e TOOL_ARGUMENTS="-w -i /data -o /data/output.csv" -v ${PWD}/data:/data \
+profiler:sysbench
 ```
 
 Under the data directory, inspect the raw resource utilization sampling files which should be named using unique date/time stamps.  Also you will find the delta JSON and delta CSV output files. Static.json contains attributes sampled by the ContainerProfiler that do not change.
