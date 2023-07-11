@@ -21,12 +21,13 @@ University of Washington Tacoma
          * [VM Level Metrics](#vm-level-metrics)
          * [Container Level Metrics](#container-level-metrics)
          * [Process Level Metrics](#process-level-metrics)
-      * [Tutorial - Profiling a Container](#tutorial-profiling-a-container)
+      * [Tutorial - Profiling a Container](#tutorial-profiling-a-container)      
          * [Video Demonstration](#video-demonstration)
          * [Install the Container Profiler](#Install-the-Container-Profiler)
          * [Preparing the Container Profiler](#Preparing-the-Container-Profiler)
          * [Starting the Profiler](#starting-the-profiler)
-
+      * [Sysbench Container Profiling Example](#Sysbench-profiling-example)
+ 
 # FAQ
 ## General
 
