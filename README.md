@@ -229,6 +229,18 @@ For example:
 sudo ./build.sh -d docker/sysbench.docker
 ```
 
+docker/sysbench.docker:
+
+```
+FROM ubuntu:20.04
+MAINTAINER varikmp<varikmp@uw.edu>
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get -y update \
+    && apt-get install -y sysbench \
+    && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["sysbench"]
+```
+
 ## 3. How do I profile my container once I've integrated the ContainerProfiler 
 
 ```bash
@@ -284,6 +296,23 @@ For example:
 
 ```bash
 sudo ./build.sh -i docker/install.sh
+```
+
+docker/install.sh:
+
+```
+# do NOT remove this command
+apt-get update
+
+# fill up your additional steps for the package installation
+apt-get install -y build-essential gcc nano git \
+	sysbench && echo "test"
+
+# remove unnecessary build packages for execution
+apt-get remove -y gcc build-essential nano git
+
+# clean up the installation
+apt-get autoclean -y && apt-get autoremove -y --purge && rm -rf /var/lib/apt/lists/* && rm -rf /var/cache/apk*
 ```
 
 You will be asked to enter an entry point based on the software you attempt to install in your install script.
@@ -423,7 +452,18 @@ Next build the sysbench Docker container integrating the ContainerProfiler tool:
 
 ```bash
 # build sysbench container integrating ContainerProfiler
-sudo ./build.sh -d sysb/sysbench
+sudo ./build.sh -d docker/sysbench.docker
+```
+
+docker/sysbench.docker:
+```
+FROM ubuntu:20.04
+MAINTAINER varikmp<varikmp@uw.edu>
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get -y update \
+    && apt-get install -y sysbench \
+    && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["sysbench"]
 ```
 
 Now perform delta resource utilization profiling to measure resource consumption of running sysbench.
