@@ -185,9 +185,9 @@ else
     echo -e "\t-v \${PWD}:/data \\"
     echo -e "\t profiler:$TAG YOUR_ARUMENTS_GO_HERE"
     
-    echo -e "[$GREEN""INFO "$BLANK"] an example of calculating aggregate values"
+    echo -e "[$GREEN""INFO "$BLANK"] an example of calculating aggregate (delta) values"
     echo -e "$GREEN\$$BLANK sudo docker run --rm \\"
-    echo -e "\t-e TOOL=aggregate \\"
+    echo -e "\t-e TOOL=delta \\"
     echo -e "\t-e TOOL_ARGUMENTS=\"-i /data -o /data\" \\"
     echo -e "\t-v \${PWD}:/data \\"
     echo -e "\t profiler:$TAG"
