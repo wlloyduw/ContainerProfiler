@@ -394,3 +394,50 @@ sudo docker run --rm \
 	-v ${PWD}:/data \
 	 profiler:sysbench
 ```
+# Sysbench profiling example
+
+Starting from a fresh checkout of the ContainerProfiler sources, here is how to build a separate Container with a benchmark application (sysbench), and then use the ContainerProfiler to profile resource utilization.
+
+```bash
+# From ContainerProfiler checkout directory
+
+# build ContainerProfiler
+sudo ./build.sh
+
+# Create a new Docker container to encapsulate sysbench for benchmarking:
+mkdir sysb
+
+# Create Dockerfile for sysbench container:
+gedit sysb/sysbench
+```
+
+Here is the content of the sysbench Docker container:
+```bash
+FROM ubuntu
+RUN apt-get update
+RUN apt-get install -y sysbench
+```
+
+Next build the sysbench Docker container integrating the ContainerProfiler tool:
+
+```bash
+# build sysbench container integrating ContainerProfiler
+sudo ./build.sh -d sysb/sysbench
+```
+
+Now perform delta resource utilization profiling to measure resource consumption of running sysbench.
+All output files will go under local data directory.
+
+```bash
+# make data directory
+mkdir data
+
+# profile sysbench
+sudo docker run --rm -e TOOL=profile -e TOOL_ARGUMENTS="-o /data" -v ${PWD}/data:/data profiler:sysbench 'sysbench --test=cpu --cpu-max-prime=2000000 --num-threads=2 --max-requests=10 run'
+
+# calculate delta values
+sudo docker run --rm -e TOOL=delta -e TOOL_ARGUMENTS="-i /data -o /data" -v ${PWD}/data:/data profiler:sysbench
+
+# create csv output
+sudo docker run --rm -e TOOL=csv -e TOOL_ARGUMENTS="-w -i /data -o /data/output.csv" -v ${PWD}/data:/data profiler:sysbench
+```
