@@ -1,7 +1,7 @@
 #!/bin/bash
 #======================================================================
 #- IMPLEMENTATION
-#-    version         profiler (https://www.washington.edu/) 0.5
+#-    version         profiler (https://www.washington.edu/) 0.6
 #-    author          Varik Hoang <varikmp@uw.edu>
 #-    copyright       Copyright (c) https://www.washington.edu/
 #-    license         GNU General Public License
@@ -11,6 +11,8 @@
 #     2021/08/12 : varikmp - implemented time steps for sampling
 #     2021/12/03 : varikmp - change the time steps to milliseconds
 #                          - generate static metrics separately
+#     2022/05/24 : varikmp - report the sample collection time in ms
+#     2022/06/24 : varikmp - add option for metric level setup
 #======================================================================
 #  OPTION
 #    PROFILER_OUTPUT_DIR # specify the output directory
@@ -28,6 +30,7 @@ function usage()
     echo "Usage: $0 [profile|aggregate|csv|graph]"
     echo "       profile: to profile a set of commands"
     echo "         -o   --output-directory       : specify the output directory for profiling data in JSON format"
+    echo "         -m   --metric-level           : specify the metric level to profile (v for VM, c for container, and p for process)"
     echo "         -t   --time-steps             : specify the time steps (in milliseconds) to profile during the command execution"
     echo "         -c   --clean-up               : clean up the profiling files from the previous run"
     echo "       delta: calculate the aggregate values"
@@ -70,12 +73,15 @@ function error()
 
 function profile()
 {
+	# assign the default metric levels: VM, Container, and Process
+	METRIC_LEVEL=vcp
+	
     # clean up status file from the previous work
     echo "" > status.log
 
     # capture the arguments
     echo -e "[$GREEN""INFO "$BLANK"] profiling commands ..."; shift
-    eval set -- "$(getopt -a --options o:t:cd -- "$@")"
+    eval set -- "$(getopt -a --options o:m:t:cd -- "$@")"
     while true
     do
         ARGUMENT=$1
@@ -87,6 +93,9 @@ function profile()
         case "$ARGUMENT" in
             -o|--output-directory)
                 PROFILER_OUTPUT_DIR=$2
+                shift 2;;
+            -m|--metric-level)
+                METRIC_LEVEL=$2
                 shift 2;;
             -t|--time-steps)
                 PROFILER_TIME_STEPS=$2
@@ -150,15 +159,15 @@ function profile()
     if [ -z "$PROFILER_COMMAND_SET" ]
     then
         # generate a single profiling file
-        python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
+        python3 ./rudataall.py -$METRIC_LEVEL $PROFILER_OUTPUT_DIR
         STATUS=$? # must be always zero
     elif [ $(echo "$PROFILER_TIME_STEPS > 0" | bc -l) -le 0 ]
     then
         # execute the set of commands
-        python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
+        python3 ./rudataall.py -$METRIC_LEVEL $PROFILER_OUTPUT_DIR
         eval "$@"
         STATUS=$?
-        python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR
+        python3 ./rudataall.py -$METRIC_LEVEL $PROFILER_OUTPUT_DIR
     else
         # execute the set of commands and capture the process id
         eval "$@" & PID=$!
@@ -176,7 +185,7 @@ function profile()
         
         # https://github.com/wlloyduw/ContainerProfiler/blob/david/ubuntu/entrypoint.sh
         echo $PID > profile.pid
-        python3 ./rudataall.py -vcp $PROFILER_OUTPUT_DIR $PROFILER_TIME_STEPS
+        python3 ./rudataall.py -$METRIC_LEVEL $PROFILER_OUTPUT_DIR $PROFILER_TIME_STEPS
         STATUS=$?
     fi
 
@@ -192,7 +201,7 @@ function profile()
     fi
 }
 
-function aggregate()
+function delta()
 {
     # clean up status file from the previous work
     echo "" > status.log
@@ -649,7 +658,7 @@ case "$1" in
     "profile")
         profile "$@" ;;
     "delta")
-        aggregate "$@" ;;
+        delta "$@" ;;
     "csv")
         csv "$@" ;;
     "graph")
@@ -658,3 +667,5 @@ case "$1" in
         usage
 esac
 
+exit
+python3 -c "import time; print('%.20f' % time.time())"; date +%s.%3N; echo in seconds
