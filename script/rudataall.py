@@ -24,10 +24,11 @@ import time
 #add the virtual level.
 CORRECTION_MULTIPLIER=100
 CORRECTION_MULTIPLIER_MEMORY=(1/1000)
+CGROUP_DIR='/sys/fs/cgroup/'
 
 parser = argparse.ArgumentParser(description='process path and file /or string of metrics.')
 parser.add_argument('output_dir', action='store', help='stores directory to where the files will be output to')
-parser.add_argument('time_series', type=int, nargs='?', default=0, help='stores time series factor (default is 0 which means no time series)')
+parser.add_argument('time_series', type=int, nargs='?', default=0, help='stores time series (in milliseconds) factor (default is 0 which means no time series)')
 parser.add_argument("-v", "--vm_profiling", action="store_true", default=False, help='list of metrics to graph over')
 parser.add_argument("-c", "--container_profiling", action="store_true", default=False, help='list of metrics to graph over')
 parser.add_argument("-p", "--processor_profiling", action="store_true", default=False, help='list of metrics to graph over')
@@ -46,6 +47,10 @@ already_printed=False
 def print_nothing(*args):
     pass
 
+def get_tick_in_ms():
+    return (time.time()) # milliseconds
+
+cgroup_v2_detected = False
 def get_file_content(file_path, default_value=""):
     """get_file_content(file_path, [default_value])
 
@@ -60,7 +65,10 @@ def get_file_content(file_path, default_value=""):
                 return default_value
             return file_content
     except FileNotFoundError:
-        print_console("File '{}' does not exist".format(file_path))
+		if not cgroup_v2_detected:
+			print_console("cgroup v2 detected")
+			cgroup_v2_detected = True
+        # print_console("File '{}' does not exist".format(file_path))
     except:
         print_console("Could not open the file '{}'".format(file_path))
     return default_value
@@ -175,33 +183,38 @@ def get_static_info():
     return vm_dict
 
 def getContainerInfo():
-    cpuTime=int(get_file_content("/sys/fs/cgroup/cpuacct/cpuacct.usage", 0))
+    cpuTime=int(get_file_content("{}/cpuacct/cpuacct.usage".format(CGROUP_DIR), 0))
+    tcpuTime = get_tick_in_ms()
 
-    container_mem_stats = get_file_content("/sys/fs/cgroup/memory/memory.stat", "pgfault 0\npgmajfault 0")
+    container_mem_stats = get_file_content("{}/memory/memory.stat".format(CGROUP_DIR), "pgfault 0\npgmajfault 0")
     cpgfault = int(re.findall(r'pgfault.*', container_mem_stats)[0].split()[1])
     cpgmajfault = int(re.findall(r'pgmajfault.*', container_mem_stats)[0].split()[1])
 
     cpuinfo_file_stats = get_file_content("/proc/stat", "cpu 0 0 0 0 0 0 0 0 0 0") # default: 1 processor
     cCpuTimeUserMode = int(re.findall(r'cpu.*', cpuinfo_file_stats)[0].split()[1])
+    tcCpuTimeUserMode = get_tick_in_ms()
     cCpuTimeKernelMode = int(re.findall(r'cpu.*', cpuinfo_file_stats)[0].split()[3])
+    tcCpuTimeKernelMode = get_tick_in_ms()
 
-    cProcessorStatsFileArr = get_file_content("/sys/fs/cgroup/cpuacct/cpuacct.usage_percpu", "0").split() # default: 1 processor
+    cProcessorStatsFileArr = get_file_content("{}/cpuacct/cpuacct.usage_percpu".format(CGROUP_DIR), "0").split() # default: 1 processor
     cProcessorDict={}
-    count =0
+    count=0
     for el in cProcessorStatsFileArr:
         temp_str="cCpu${}TIME".format(count)
-        count+=1
         cProcessorDict[temp_str]=int(el)
+        tcCpuTIME = get_tick_in_ms()
+        cProcessorDict["tcCpu${}TIME".format(count)]=tcCpuTIME
+        count+=1
 
     # data sample
     # 8:0 53966
     # 11:0 0
-    cDiskSectorIO = get_file_content("/sys/fs/cgroup/blkio/blkio.sectors", "11:0 0\n22:0 0")
+    cDiskSectorIO = get_file_content("{}/blkio/blkio.sectors".format(CGROUP_DIR), "11:0 0\n22:0 0")
     try:
         cDiskSectorIOFileArr = cDiskSectorIO.split(sep='\n')
         cDiskSectorIO = sum([int(line.split()[1]) for line in cDiskSectorIOFileArr])
     except:
-        print_console("Could not find the virtual file /sys/fs/cgroup/blkio/blkio.sectors")
+        print_console("Could not find the virtual file {}/blkio/blkio.sectors".format(CGROUP_DIR))
         cDiskSectorIO=0 
     
     cDiskReadBytes=0
@@ -212,7 +225,7 @@ def getContainerInfo():
         for line in output.decode('UTF-8').split(sep='\n')[:-1]:
             major_minor_arr.append(line.split()[1])
 
-        cDiskRWBytesFile = get_file_content("/sys/fs/cgroup/blkio/blkio.throttle.io_service_bytes", "259:0 Read 0\n259:0 Write 0")
+        cDiskRWBytesFile = get_file_content("{}/blkio/blkio.throttle.io_service_bytes".format(CGROUP_DIR), "259:0 Read 0\n259:0 Write 0")
         cDiskReadBytesArr=re.findall(r'.*Read.*', cDiskRWBytesFile)
         cDiskWriteBytesArr=re.findall(r'.*Write.*', cDiskRWBytesFile)
 
@@ -247,23 +260,26 @@ def getContainerInfo():
     cMemoryUsed = 0
     cMemoryMaxUsed = 0
     try:
-        cMemoryUsed = int(get_file_content("/sys/fs/cgroup/memory/memory.usage_in_bytes", "0"))
-        cMemoryMaxUsed = int(get_file_content("/sys/fs/cgroup/memory/memory.max_usage_in_bytes", "0"))
+        cMemoryUsed = int(get_file_content("{}/memory/memory.usage_in_bytes".format(CGROUP_DIR), "0"))
+        cMemoryMaxUsed = int(get_file_content("{}/memory/memory.max_usage_in_bytes".format(CGROUP_DIR), "0"))
     except:
         print_console("The memory usage in bytes not an integer type")
 
     #CPU=(`cat /proc/stat | grep '^cpu '`)
 
-    cNumProcesses = sum(1 for line in get_file_content("/sys/fs/cgroup/pids/tasks", "2")) -2
+    cNumProcesses = sum(1 for line in get_file_content("{}/pids/tasks".format(CGROUP_DIR), "2")) -2
 
     container_dict={        
         "cCpuTime": cpuTime,
+        "tcCpuTime": tcpuTime,
         "cPGFault": cpgfault,
         "cMajorPGFault": cpgmajfault,
         "cProcessorStats": cProcessorDict,
-        "cCpuTimeUserMode":   cCpuTimeUserMode,
+        "cCpuTimeUserMode": cCpuTimeUserMode,
+        "tcCpuTimeUserMode": tcCpuTimeUserMode,
         "cCpuTimeKernelMode": cCpuTimeKernelMode,
-        "cDiskSectorIO":      cDiskSectorIO,
+        "tcCpuTimeKernelMode": tcCpuTimeKernelMode,
+        "cDiskSectorIO": cDiskSectorIO,
         "cDiskReadBytes":  cDiskReadBytes,
         "cDiskWriteBytes": cDiskWriteBytes    ,
         "cNetworkBytesRecvd":cNetworkBytesRecvd,
@@ -276,7 +292,8 @@ def getContainerInfo():
     return container_dict
 
 def getVmInfo():
-    cpu_info=psutil.cpu_times()
+    cpu_info=psutil.cpu_times() # ATTENTION could not get ticks for each metrics inside this method
+    t_cpu_info = get_tick_in_ms()
     net_info=psutil.net_io_counters(nowrap=True)
     cpu_info2=psutil.cpu_stats()
     disk_info=psutil.disk_io_counters()
@@ -300,9 +317,11 @@ def getVmInfo():
     vDiskSucessfulWrites=int(re.findall(rf"{mounted_filesys}.*", vm_disk_file_stats)[0].split(sep=" ")[5])
     vDiskTotal, vDiskUsed, vDiskFree = shutil.disk_usage("/")
 
+	# TODO add all ticks for each metric
     vm_dict={
         "vMetricType" : "VM Level",
         "vCpuTime" : (cpu_info[0] + cpu_info[2]) *CORRECTION_MULTIPLIER ,
+        "tvCpuTime" : t_cpu_info,
         "vDiskSectorReads" : disk_info[2]/512, 
         "vDiskSectorWrites" : disk_info[3]/512,
         "vNetworkBytesRecvd" : net_info[1],
@@ -310,14 +329,23 @@ def getVmInfo():
         "vPgFault" : pgfault,
         "vMajorPageFault" : pgmajfault,
         "vCpuTimeUserMode" : cpu_info[0] * CORRECTION_MULTIPLIER, 
+        "tvCpuTimeUserMode" : t_cpu_info,
         "vCpuTimeKernelMode" : cpu_info[2] * CORRECTION_MULTIPLIER,
-        "vCpuIdleTime" :  cpu_info[3]* CORRECTION_MULTIPLIER,
-        "vCpuTimeIOWait" :  cpu_info[4]* CORRECTION_MULTIPLIER,
+        "tvCpuTimeKernelMode" : t_cpu_info,
+        "vCpuIdleTime" : cpu_info[3]* CORRECTION_MULTIPLIER,
+        "tvCpuIdleTime" : t_cpu_info,
+        "vCpuTimeIOWait" : cpu_info[4]* CORRECTION_MULTIPLIER,
+        "tvCpuTimeIOWait" : t_cpu_info,
         "vCpuTimeIntSrvc" :  cpu_info[5]* CORRECTION_MULTIPLIER,
+        "tvCpuTimeIntSrvc" :  t_cpu_info,
         "vCpuTimeSoftIntSrvc" : cpu_info[6] * CORRECTION_MULTIPLIER,
+        "tvCpuTimeSoftIntSrvc" : t_cpu_info,
         "vCpuContextSwitches" : cpu_info2[0]* CORRECTION_MULTIPLIER,
+        "tvCpuContextSwitches" : t_cpu_info,
         "vCpuNice" : cpu_info[1]* CORRECTION_MULTIPLIER,
+        "tvCpuNice" : t_cpu_info,
         "vCpuSteal" : cpu_info[7]* CORRECTION_MULTIPLIER,
+        "tvCpuSteal" : t_cpu_info,
         "vDiskTotal" : vDiskTotal,
         "vDiskUsed" : vDiskUsed,
         "vDiskFree" : vDiskFree,
@@ -344,29 +372,39 @@ def getProcInfo():
         #procFile="/proc/{}/stat".format(proc.pid) 
         #log = open(procFile, "r")
         #pidProcStat=log.readline().split()
-        curr_dict={
-            "pId" : proc.pid,
-            "pCmdline" : " ".join(proc.cmdline()),
-            "pName" : proc.name(),
-            "pNumThreads" : proc.num_threads(),
-            "pCpuTimeUserMode" : proc.cpu_times()[0]* CORRECTION_MULTIPLIER,
-            "pCpuTimeKernelMode" : proc.cpu_times()[1]* CORRECTION_MULTIPLIER,
-            "pChildrenUserMode" : proc.cpu_times()[2]* CORRECTION_MULTIPLIER,
-            "pChildrenKernelMode" : proc.cpu_times()[3]* CORRECTION_MULTIPLIER,
-            #"pPGFault" : int(pidProcStat[9]),
-            #"pMajorPGFault" : int(pidProcStat[11]),
-            "pVoluntaryContextSwitches" : proc.num_ctx_switches()[0],        
-            "pInvoluntaryContextSwitches" : proc.num_ctx_switches()[1],        
-            "pBlockIODelays" : proc.cpu_times()[4]* CORRECTION_MULTIPLIER,
-            "pVirtualMemoryBytes" : proc.memory_info()[1]
-            #"pResidentSetSize" : proc.memory_info()[0]             
-        }
-        dictlist.append(curr_dict)
+        try:
+            curr_dict={
+                "pId" : proc.pid,
+                "pCmdline" : " ".join(proc.cmdline()),
+                "pName" : proc.name(),
+                "pNumThreads" : proc.num_threads(),
+                "pCpuTimeUserMode" : proc.cpu_times()[0]* CORRECTION_MULTIPLIER,
+                "pCpuTimeKernelMode" : proc.cpu_times()[1]* CORRECTION_MULTIPLIER,
+                "pChildrenUserMode" : proc.cpu_times()[2]* CORRECTION_MULTIPLIER,
+                "pChildrenKernelMode" : proc.cpu_times()[3]* CORRECTION_MULTIPLIER,
+                #"pPGFault" : int(pidProcStat[9]),
+                #"pMajorPGFault" : int(pidProcStat[11]),
+                "pVoluntaryContextSwitches" : proc.num_ctx_switches()[0],        
+                "pInvoluntaryContextSwitches" : proc.num_ctx_switches()[1],        
+                "pBlockIODelays" : proc.cpu_times()[4]* CORRECTION_MULTIPLIER,
+                "pVirtualMemoryBytes" : proc.memory_info()[1]
+                #"pResidentSetSize" : proc.memory_info()[0]             
+            }
+            dictlist.append(curr_dict)
+        except:
+            pass
     return dictlist
 
 def profile_command():
-    seconds_since_epoch = round(datetime.now().timestamp())
-    output_dict["currentTime"] = seconds_since_epoch        #bad value.
+    """
+    Author: Varik Hoang
+    The method executes the command and return the profiling time in milliseconds
+    """
+    profiling_time=get_tick_in_ms()
+    output_dict["currentTime"] = int(time.time() * 10**9)
+
+    # seconds_since_epoch = round(datetime.now().timestamp())
+    # output_dict["currentTime"] = seconds_since_epoch        #bad value.
     
     static_metrics_file = output_dir + '/static.json'
     if not os.path.exists(static_metrics_file):
@@ -394,23 +432,33 @@ def profile_command():
         output_dict["pProcesses"] = procces_info
         output_dict["Process_Write_Time"] = process_write_time.total_seconds()
     
+    # capture the profiling time in milliseconds
+    profiling_time = get_tick_in_ms()-profiling_time
+    output_dict['profiling_time'] = profiling_time
+    
+    # write to output file
     filename = datetime.now().strftime(output_dir+"/%Y_%m_%d_%H_%M_%S.json")
     with open(filename, 'w') as outfile: 
         json.dump(output_dict, outfile, indent=4)
 
+    return profiling_time
+
 print_console=print
-profile_time=time.time()
-profile_command()
-profile_time=time.time()-profile_time
+profile_time = profile_command()
 if time_series > profile_time:
     time.sleep((time_series-profile_time)/1000)
 print_console=print_nothing
+# keep the process running until it finishes
 while is_process_running():
-    profile_time=time.time()
-    profile_command()
-    profile_time=time.time()-profile_time
+    profile_time = profile_command()
     if time_series > profile_time:
         time.sleep((time_series-profile_time)/1000)
+profile_command()
 
 if time_series != 0:
-    os.remove("./profile.pid")
+	try:
+		os.remove("./profile.pid")
+	except:
+		pass
+	else:
+		pass
