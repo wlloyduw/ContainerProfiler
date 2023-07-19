@@ -325,6 +325,13 @@ Later, when running the container you do not need to specify the command again, 
 After the container name 'profiler:sysbench' you will need to specify the command line arguments
 for the application being profiled.
 
+Short Name | Long Name | Optional | Descriptions
+--- | --- | --- | ---
+-o | --output-directory | No | specify the output directory for profiling files in JSON format
+-m | --metric-level | Yes | specify the metric levels (v: virtual machine, c: container, p: process)
+-t | --time-steps | Yes | specify the time steps between two instance times
+-c | --clean-up | Yes | clean up the profiling files from the previous run
+
 ```bash
 sudo docker run --rm \
     -e TOOL=profile \
@@ -452,20 +459,19 @@ Next build the sysbench Docker container integrating the ContainerProfiler tool:
 
 ```bash
 # build sysbench container integrating ContainerProfiler
-sudo ./build.sh -d sysb/sysbench
+sudo ./build.sh -d docker/sysbench.docker
 ```
 
-<!--- docker/sysbench.docker:
- ```
- FROM ubuntu:20.04
- MAINTAINER varikmp<varikmp@uw.edu>
- ENV DEBIAN_FRONTEND noninteractive
- RUN apt-get -y update \
+docker/sysbench.docker:
+```
+FROM ubuntu:20.04
+MAINTAINER varikmp<varikmp@uw.edu>
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get -y update \
     && apt-get install -y sysbench \
     && rm -rf /var/lib/apt/lists/*
- ENTRYPOINT ["sysbench"]
- ```
---->
+ENTRYPOINT ["sysbench"]
+```
 
 Now perform delta resource utilization profiling to measure resource consumption of running sysbench.
 All output files will go under local data directory.
