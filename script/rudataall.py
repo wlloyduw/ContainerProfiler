@@ -65,9 +65,9 @@ def get_file_content(file_path, default_value=""):
                 return default_value
             return file_content
     except FileNotFoundError:
-		if not cgroup_v2_detected:
-			print_console("cgroup v2 detected")
-			cgroup_v2_detected = True
+        if not cgroup_v2_detected:
+            print_console("cgroup v2 detected")
+            cgroup_v2_detected = True
         # print_console("File '{}' does not exist".format(file_path))
     except:
         print_console("Could not open the file '{}'".format(file_path))
