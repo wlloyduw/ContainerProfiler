@@ -35,6 +35,7 @@ parser.add_argument("-p", "--processor_profiling", action="store_true", default=
 args= parser.parse_args()
 output_dir = args.output_dir
 time_series = args.time_series
+cgroup_v2_detected = False
 
 if all(v is False for v in [args.vm_profiling, args.container_profiling, args.processor_profiling]):
     args.vm_profiling = True
@@ -50,7 +51,6 @@ def print_nothing(*args):
 def get_tick_in_ms():
     return (time.time()) # milliseconds
 
-cgroup_v2_detected = False
 def get_file_content(file_path, default_value=""):
     """get_file_content(file_path, [default_value])
 
