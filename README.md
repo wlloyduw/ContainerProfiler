@@ -452,19 +452,20 @@ Next build the sysbench Docker container integrating the ContainerProfiler tool:
 
 ```bash
 # build sysbench container integrating ContainerProfiler
-sudo ./build.sh -d docker/sysbench.docker
+sudo ./build.sh -d sysb/sysbench
 ```
 
-docker/sysbench.docker:
-```
-FROM ubuntu:20.04
-MAINTAINER varikmp<varikmp@uw.edu>
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get -y update \
+<!--- docker/sysbench.docker:
+ ```
+ FROM ubuntu:20.04
+ MAINTAINER varikmp<varikmp@uw.edu>
+ ENV DEBIAN_FRONTEND noninteractive
+ RUN apt-get -y update \
     && apt-get install -y sysbench \
     && rm -rf /var/lib/apt/lists/*
-ENTRYPOINT ["sysbench"]
-```
+ ENTRYPOINT ["sysbench"]
+ ```
+--->
 
 Now perform delta resource utilization profiling to measure resource consumption of running sysbench.
 All output files will go under local data directory.
