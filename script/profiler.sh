@@ -13,6 +13,7 @@
 #                          - generate static metrics separately
 #     2022/05/24 : varikmp - report the sample collection time in ms
 #     2022/06/24 : varikmp - add option for metric level setup
+#     2025/10/16 : varikmp - swap the order of two time steps
 #======================================================================
 #  OPTION
 #    PROFILER_OUTPUT_DIR # specify the output directory
@@ -294,7 +295,7 @@ function delta()
     for INDEX in $(seq 1 $SIZE)
     do
         PREV_INDEX=$(($INDEX-1))
-        ./aggregate.sh ${PROFILING_FILES[$INDEX]} ${PROFILING_FILES[$PREV_INDEX]} $AGGREGATE_CONFIG_FILE > $AGGREGATE_OUTPUT_DIR/delta_$(date '+%Y_%m_%d_%H_%M_%S').json
+        ./aggregate.sh ${PROFILING_FILES[$PREV_INDEX]} ${PROFILING_FILES[$INDEX]} $AGGREGATE_CONFIG_FILE > $AGGREGATE_OUTPUT_DIR/delta_$(date '+%Y_%m_%d_%H_%M_%S').json
     done
 
     # report the status code (assume the aggregate calculation is always correct)

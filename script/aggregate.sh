@@ -10,6 +10,7 @@
 #     2021/11/01 : varikmp - script creation
 #     2021/11/08 : varikmp - implemented different aggregate operators
 #                            beside the existing one (delta)
+#     2025/10/16 : varikmp - swap the order of two time steps
 #======================================================================
 #  OPTION
 #    PROFILING_FILE_1 # specify the first  profiling file in JSON format
@@ -107,7 +108,7 @@ function print_aggregations
                             ;;
 
                         *) # delta
-                            AGG_RS=$(bc -l <<< "$VALUE_1 - $VALUE_2")
+                            AGG_RS=$(bc -l <<< "$VALUE_2 - $VALUE_1")
                             ;;
                         
                     esac
